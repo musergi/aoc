@@ -1,0 +1,257 @@
+inp w			w1	0	0	0
+mul x 0			w1	0	0	0
+add x z			w1	0	0	0
+mod x 26		w1	0	0	0
+div z 1			w1	0	0	0
+add x 10		w1	10	0	0
+eql x w			w1	0	0	0
+eql x 0			w1	1	0	0
+mul y 0			w1	1	0	0
+add y 25		w1	1	25	0
+mul y x			w1	1	25	0
+add y 1			w1	1	26	0
+mul z y			w1	1	26	0
+mul y 0			w1	1	0	0
+add y w			w1	1	w1	0
+add y 2			w1	1	w1+2	0
+mul y x			w1	1	w1+2	0
+add z y			w1	1	w1+2	w1+2=z
+
+inp w			w2	1	w1+2	z
+mul x 0			w2	0	w1+2	z
+add x z			w2	z	w1+2	z
+mod x 26		w2	z%26	w1+2	z
+div z 1			w2	.	w1+2	z
+add x 14		w2	+14	w1+2	z
+eql x w			w2	0	w1+2	z
+eql x 0			w2	1	w1+2	z
+mul y 0			w2	1	0	z
+add y 25		w2	1	25	z
+mul y x			w2	1	25	z
+add y 1			w2	1	26	z
+mul z y			w2	1	26	26*z
+mul y 0			w2	1	0	z
+add y w			w2	1	w2	z
+add y 13		w2	1	w2+13	z
+mul y x			w2	1	w2+13	z
+add z y			w2	1	w2+13	26*(w1+2)+w2+13
+
+inp w			w3	1	w2+13	26*(w1+2)+w2+13
+mul x 0			w3	0	w2+13	26*(w1+2)+w2+13
+add x z			w3	z	w2+13	26*(w1+2)+w2+13
+mod x 26		w3	1	w2+13	26*(w1+2)+w2+13
+div z 1			w3	1	w2+13	26*(w1+2)+w2+13
+add x 14		w3	1	w2+13	26*(w1+2)+w2+13
+eql x w			w3	0	w2+13	26*(w1+2)+w2+13
+eql x 0			w3	1	0	26*(w1+2)+w2+13
+mul y 0			w3	1	0	26*(w1+2)+w2+13
+add y 25		w3	1	25	26*(w1+2)+w2+13
+mul y x			w3	1	25	26*(w1+2)+w2+13
+add y 1			w3	1	26	26*(w1+2)+w2+13
+mul z y			w3	1	w2+13	26*(w1+2)+w2+13
+mul y 0			w3	1	w2+13	26*(w1+2)+w2+13
+add y w			w3	1	w2+13	26*(w1+2)+w2+13
+add y 13		w3	1	w2+13	26*(w1+2)+w2+13
+mul y x			w3	1	w2+13	26*(w1+2)+w2+13
+add z y			w3	1	w2+13	26*(w1+2)+w2+13
+
+inp w			w4	-	-	z
+mul x 0			w4	0	-	z
+add x z			w4	z	-	z
+mod x 26		w4	z%26	-	z
+div z 26		w4	z%26	-	z/26
+add x -13		w4	z%26-13 -	z/26
+eql x w			w4	1	-	z/26		# In other iter
+eql x 0			w4	0	-	z/26		it can not be 
+mul y 0			w4	0	0	z/26		eq but it must
+add y 25		w4	0	25	z/26		not grow in
+mul y x			w4	0	0	z/26		type 2 as it
+add y 1			w4	0	1	z/26		always does in
+mul z y			w4	0	1	z/26		type 1
+mul y 0			w4	0	0	z/26
+add y w			w4	0	z/26	z/26
+add y 9			w4	0	z/26+9	z/26
+mul y x			w4	0	0	z/26
+add z y			w4	0	0	z/26
+
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 10
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 15
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -13
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 3
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -7
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 6
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 11
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 5
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 10
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 16
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 13
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 1
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -4
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 6
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -9
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 3
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -13
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 7
+mul y x
+add z y
+
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -9
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 9
+mul y x
+add z y

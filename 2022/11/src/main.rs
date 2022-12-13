@@ -173,6 +173,7 @@ where
     F: FnMut(u64) -> u64,
 {
     let mut throws = iter::repeat(0).take(monkeys.len()).collect::<Vec<_>>();
+    let modulus = monkeys.iter().map(|m| m.check.0).product::<u64>();
     for _ in 0..rounds {
         for idx in 0..monkeys.len() {
             let items = monkeys
@@ -183,7 +184,7 @@ where
                 .collect::<Vec<_>>();
             for item in items {
                 *throws.get_mut(idx).unwrap() += 1;
-                let new = relax_fn(monkeys.get(idx).unwrap().action.eval(item));
+                let new = relax_fn(monkeys.get(idx).unwrap().action.eval(item)) % modulus;
                 let target = monkeys.get(idx).unwrap().get_target(&new).clone();
                 monkeys.get_mut(target).expect("Target").items.push(new);
             }
@@ -195,12 +196,11 @@ where
         .rev()
         .take(2)
         .cloned()
-        .reduce(|a, b| a * b)
-        .expect("Level")
+        .product()
 }
 
 fn main() {
-    let mut monkeys = fs::read_to_string("assets/input.txt")
+    let monkeys = fs::read_to_string("assets/input.txt")
         .expect("File")
         .split("\n\n")
         .map(|ls| ls.parse::<Monkey>())
@@ -212,6 +212,6 @@ fn main() {
     );
     println!(
         "New level of buisness: {}",
-        worry_level(monkeys.clone(), 10000, |x| x)
+        worry_level(monkeys, 10000, |x| x)
     );
 }

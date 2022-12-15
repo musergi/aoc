@@ -1,3 +1,8 @@
+use std::cmp::Ord;
+use std::cmp::Ordering;
+use std::collections::BTreeMap;
+use std::collections::BinaryHeap;
+use std::fmt::Debug;
 use std::fs;
 use std::str::FromStr;
 
@@ -18,7 +23,7 @@ impl Tile {
     }
 
     fn can_go(&self, other: &Tile) -> bool {
-        self.0 + 1 == other.0
+        self.0 + 1 == other.0 || self.0 == other.0
     }
 }
 
@@ -85,6 +90,17 @@ impl Map {
     fn get_height(&self) -> usize {
         self.tiles.len() / self.width
     }
+
+    fn get_end(&self) -> Option<Position> {
+        self.tiles
+            .iter()
+            .enumerate()
+            .find(|(_, t)| t.is_end())
+            .map(|(i, _)| Position {
+                x: i % self.width,
+                y: i / self.width,
+            })
+    }
 }
 
 impl FromStr for Map {
@@ -100,7 +116,21 @@ impl FromStr for Map {
     }
 }
 
-#[derive(Debug)]
+impl Traversor<Position> for Map {
+    fn get_neightbors(&self, el: &Position) -> Vec<Position> {
+        self.get_next(el)
+    }
+
+    fn dist(&self, l: &Position, r: &Position) -> u32 {
+        (l.x.abs_diff(r.y) + l.y.abs_diff(l.y)) as u32
+    }
+
+    fn cost(&self, l: &Position, r: &Position) -> u32 {
+        (l.x.abs_diff(r.y) + l.y.abs_diff(l.y)) as u32
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 struct Position {
     x: usize,
     y: usize,
@@ -144,17 +174,137 @@ impl From<InvalidTileChar> for ParseMapError {
     }
 }
 
-fn a_star<T, F>(start: T, end: T, cost: F) -> Vec<Position>
+#[derive(Debug, Eq)]
+struct StarItem<T> {
+    cost: u32,
+    content: T,
+}
+
+impl<T> StarItem<T> {
+    fn new(content: T) -> StarItem<T> {
+        StarItem { cost: 0, content }
+    }
+}
+
+impl<T> PartialEq for StarItem<T>
 where
-    F: FnMut(T) -> u32,
+    T: PartialEq,
 {
+    fn eq(&self, other: &StarItem<T>) -> bool {
+        self.cost == other.cost && self.content == other.content
+    }
+}
+
+impl<T> PartialOrd for StarItem<T>
+where
+    T: PartialOrd,
+{
+    fn partial_cmp(&self, other: &StarItem<T>) -> Option<Ordering> {
+        Some(
+            self.cost
+                .partial_cmp(&other.cost)?
+                .reverse()
+                .then(self.content.partial_cmp(&other.content)?),
+        )
+    }
+}
+
+impl<T> Ord for StarItem<T>
+where
+    T: Ord,
+{
+    fn cmp(&self, other: &StarItem<T>) -> Ordering {
+        self.cost
+            .cmp(&other.cost)
+            .reverse()
+            .then(self.content.cmp(&other.content))
+    }
+}
+
+trait Traversor<T>
+where
+    Self: Sized,
+{
+    fn get_neightbors(&self, el: &T) -> Vec<T>;
+    fn dist(&self, l: &T, r: &T) -> u32;
+    fn cost(&self, l: &T, r: &T) -> u32;
+}
+
+fn a_star<T, F>(start: T, goal: T, traversor: F) -> Vec<T>
+where
+    T: Ord + Clone,
+    F: Traversor<T>,
+{
+    let mut open = BinaryHeap::new();
+    open.push(StarItem::new(start.clone()));
+
+    let mut came_from = BTreeMap::new();
+
+    let mut g_score = BTreeMap::new();
+    g_score.insert(start.clone(), 0);
+    let mut f_score = BTreeMap::new();
+    f_score.insert(start.clone(), traversor.cost(&start, &goal));
+
+    while let Some(current) = open.pop() {
+        if current.content == goal {
+            return rebuild_path(came_from, &current.content);
+        }
+        for neighbor in traversor.get_neightbors(&current.content) {
+            let tentative = g_score.get(&current.content).unwrap()
+                + traversor.dist(&current.content, &neighbor);
+            match g_score.get_mut(&neighbor) {
+                Some(score) => {
+                    if tentative < *score {
+                        came_from.insert(neighbor.clone(), current.content.clone());
+                        *score = tentative;
+                        let f_score_neighbor = tentative + traversor.cost(&neighbor, &goal);
+                        f_score.insert(neighbor.clone(), f_score_neighbor.clone());
+                        if !open.iter().any(|o| o.content.eq(&neighbor)) {
+                            open.push(StarItem {
+                                cost: f_score_neighbor,
+                                content: neighbor,
+                            })
+                        }
+                    }
+                }
+                None => {
+                    came_from.insert(neighbor.clone(), current.content.clone());
+                    g_score.insert(neighbor.clone(), tentative);
+                    let f_score_neighbor = tentative + traversor.cost(&neighbor, &goal);
+                    f_score.insert(neighbor.clone(), f_score_neighbor.clone());
+                    if !open.iter().any(|o| o.content.eq(&neighbor)) {
+                        open.push(StarItem {
+                            cost: f_score_neighbor,
+                            content: neighbor,
+                        })
+                    }
+                    
+                }
+            }
+        }
+    }
+    Vec::new()
+}
+
+fn rebuild_path<T>(came_from: BTreeMap<T, T>, start: &T) -> Vec<T>
+where
+    T: Ord + Clone,
+{
+    let mut path = Vec::new();
+    path.push(start.clone());
+    while let Some(current) = came_from.get(path.last().unwrap()) {
+        path.push(current.clone())
+    }
+    path
 }
 
 fn main() {
-    let map = fs::read_to_string("assets/example.txt")
+    let map = fs::read_to_string("assets/input.txt")
         .expect("Read file")
         .parse::<Map>()
         .expect("Parsed Map");
     let start = map.get_start().expect("Starting position");
-    println!("{:?} {:?}", start, map.get_next(&start));
+    let end = map.get_end().expect("Ending position");
+    let path = a_star(start, end, map);
+    println!("Number of steps: {}", path.len());
 }

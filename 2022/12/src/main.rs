@@ -6,7 +6,7 @@ use std::fmt::Debug;
 use std::fs;
 use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Tile(u8);
 
 impl Tile {
@@ -23,7 +23,7 @@ impl Tile {
     }
 
     fn can_go(&self, other: &Tile) -> bool {
-        self.0 + 1 == other.0 || self.0 == other.0
+        self.0 + 1 >= other.0
     }
 }
 
@@ -48,7 +48,7 @@ impl TryFrom<char> for Tile {
 #[derive(Debug)]
 struct InvalidTileChar(char);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Map {
     width: usize,
     tiles: Vec<Tile>,
@@ -122,7 +122,7 @@ impl Traversor<Position> for Map {
     }
 
     fn dist(&self, l: &Position, r: &Position) -> u32 {
-        (l.x.abs_diff(r.y) + l.y.abs_diff(l.y)) as u32
+        (l.x.abs_diff(r.x) + l.y.abs_diff(r.y)) as u32
     }
 
     fn cost(&self, l: &Position, r: &Position) -> u32 {
@@ -278,7 +278,6 @@ where
                             content: neighbor,
                         })
                     }
-                    
                 }
             }
         }
@@ -305,6 +304,19 @@ fn main() {
         .expect("Parsed Map");
     let start = map.get_start().expect("Starting position");
     let end = map.get_end().expect("Ending position");
-    let path = a_star(start, end, map);
-    println!("Number of steps: {}", path.len());
+    let path = a_star(start, end, map.clone());
+    println!("{:?}", path);
+    for i in 0..map.tiles.len() {
+        if i % map.width == 0 {
+            println!()
+        }
+        if path.contains(&Position { x: i % map.width, y: i / map.width }) {
+            print!("#")
+        } else {
+            print!(" ")
+        }
+        
+    }
+    println!();
+    println!("Number of steps: {}", path.len().checked_sub(1).unwrap_or(0));
 }

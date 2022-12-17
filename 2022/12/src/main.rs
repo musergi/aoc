@@ -6,7 +6,7 @@ use std::fmt::Debug;
 use std::fs;
 use std::str::FromStr;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 struct Tile(u8);
 
 impl Tile {
@@ -126,7 +126,7 @@ impl Traversor<Position> for Map {
     }
 
     fn cost(&self, l: &Position, r: &Position) -> u32 {
-        (l.x.abs_diff(r.y) + l.y.abs_diff(l.y)) as u32
+        (l.x.abs_diff(r.x) + l.y.abs_diff(l.y)) as u32
     }
 }
 
@@ -304,19 +304,21 @@ fn main() {
         .expect("Parsed Map");
     let start = map.get_start().expect("Starting position");
     let end = map.get_end().expect("Ending position");
-    let path = a_star(start, end, map.clone());
-    println!("{:?}", path);
-    for i in 0..map.tiles.len() {
-        if i % map.width == 0 {
-            println!()
-        }
-        if path.contains(&Position { x: i % map.width, y: i / map.width }) {
-            print!("#")
-        } else {
-            print!(" ")
-        }
-        
-    }
-    println!();
-    println!("Number of steps: {}", path.len().checked_sub(1).unwrap_or(0));
+    let path = a_star(start, end.clone(), map.clone());
+    println!(
+        "Number of steps: {}",
+        path.len().checked_sub(1).unwrap_or(0)
+    );
+    let a = Tile::try_from('a').expect("Valid char");
+    let shortest = (0..map.tiles.len())
+        .map(|i| Position {
+            x: i % map.width,
+            y: i / map.width,
+        })
+        .filter(|p| *map.get_tile(&p).unwrap() == a)
+        .map(|p| a_star(p, end.clone(), map.clone()).len())
+        .filter(|l| *l != 0)
+        .min()
+        .expect("Path");
+    println!("Shortest path: {}", shortest - 1);
 }

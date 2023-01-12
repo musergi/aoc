@@ -8,5 +8,8 @@ fn main() {
         .parse::<Graph>()
         .expect("Parsed Graph");
     let solution = graph.get_solution(30);
-    println!("Score for 30 minutes: {}", graph.get_score(solution.iter(), 30))
+    println!(
+        "Score for 30 minutes: {}",
+        graph.get_score(solution.iter(), 30)
+    )
 }

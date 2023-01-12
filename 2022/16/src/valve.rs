@@ -1,4 +1,5 @@
 use std::fmt;
+use std::num::ParseIntError;
 use std::str::FromStr;
 
 #[derive(PartialEq, Eq)]
@@ -33,6 +34,7 @@ impl fmt::Debug for ValveId {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
 struct ValveLineInfo {
     subject: ValveId,
     flow: u32,
@@ -40,25 +42,30 @@ struct ValveLineInfo {
 }
 
 impl FromStr for ValveLineInfo {
-    type Err = ();
+    type Err = ParseValveLineInfoError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (sensor, list) = split_two(s, ";").unwrap();
-        let (subject_s, flow_s) =
-            split_two(sensor.strip_prefix("Valve ").unwrap(), " has flow rate=").unwrap();
-        let subject = subject_s.parse().unwrap();
-        let flow = flow_s.parse().unwrap();
+        let (sensor, list) = split_two(s, ";").ok_or(ParseValveLineInfoError::InvalidFormat)?;
+        let (subject_s, flow_s) = split_two(
+            sensor
+                .strip_prefix("Valve ")
+                .ok_or(ParseValveLineInfoError::InvalidFormat)?,
+            " has flow rate=",
+        )
+        .ok_or(ParseValveLineInfoError::InvalidFormat)?;
+        let subject = subject_s.parse()?;
+        let flow = flow_s.parse()?;
         let destinations = list
             .strip_prefix(" tunnels lead to valves ")
             .or(list.strip_prefix(" tunnel leads to valve "))
-            .unwrap()
+            .ok_or(ParseValveLineInfoError::InvalidFormat)?
             .split(", ")
             .map(|ids| ids.parse::<ValveId>())
-            .collect::<Result<Vec<_>,_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(ValveLineInfo {
             subject,
             flow,
-            destinations: Vec::new(),
+            destinations,
         })
     }
 }
@@ -73,10 +80,30 @@ fn split_two<'a>(s: &'a str, dem: &str) -> Option<(&'a str, &'a str)> {
     }
 }
 
+#[derive(Debug)]
+enum ParseValveLineInfoError {
+    InvalidFormat,
+    InvalidValveId(ParseValveIdError),
+    InvalidFlow(ParseIntError)
+}
+
+impl From<ParseValveIdError> for ParseValveLineInfoError {
+    fn from(err: ParseValveIdError) -> Self {
+        ParseValveLineInfoError::InvalidValveId(err)
+    }
+}
+
+impl From<ParseIntError> for ParseValveLineInfoError {
+    fn from(err: ParseIntError) -> Self {
+        ParseValveLineInfoError::InvalidFlow(err)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::valve::split_two;
     use crate::valve::ParseValveIdError;
+    use crate::valve::ParseValveLineInfoError;
     use crate::valve::ValveId;
     use crate::valve::ValveLineInfo;
 
@@ -122,24 +149,74 @@ mod tests {
             .parse::<ValveLineInfo>()
             .unwrap();
         assert_eq!(
-            valve_line.subject,
-            ValveId {
-                first: 'I',
-                second: 'I'
+            valve_line,
+            ValveLineInfo {
+                subject: ValveId {
+                    first: 'I',
+                    second: 'I'
+                },
+                flow: 0,
+                destinations: vec![
+                    ValveId {
+                        first: 'A',
+                        second: 'A',
+                    },
+                    ValveId {
+                        first: 'J',
+                        second: 'J',
+                    }
+                ]
             }
         );
-        assert_eq!(valve_line.flow, 0);
         let valve_line = "Valve JJ has flow rate=21; tunnel leads to valve II"
             .parse::<ValveLineInfo>()
             .unwrap();
         assert_eq!(
-            valve_line.subject,
-            ValveId {
-                first: 'J',
-                second: 'J'
+            valve_line,
+            ValveLineInfo {
+                subject: ValveId {
+                    first: 'J',
+                    second: 'J'
+                },
+                flow: 21,
+                destinations: vec![ValveId {
+                    first: 'I',
+                    second: 'I',
+                }]
             }
         );
-        assert_eq!(valve_line.flow, 21);
+    }
+
+    #[test]
+    fn test_line_info_err() {
+        match "II has flow rate=0; tunnels lead to valves AA, JJ".parse::<ValveLineInfo>() {
+            Err(ParseValveLineInfoError::InvalidFormat) => (),
+            _ => panic!("Expected error to occure"),
+        }
+        match "Valve II has flw rate=0; tunnels lead to valves AA, JJ".parse::<ValveLineInfo>() {
+            Err(ParseValveLineInfoError::InvalidFormat) => (),
+            _ => panic!("Expected error to occure"),
+        }
+        match "Valve II has flow rate=0 tunnels lead to valves AA, JJ".parse::<ValveLineInfo>() {
+            Err(ParseValveLineInfoError::InvalidFormat) => (),
+            _ => panic!("Expected error to occure"),
+        }
+        match "Valve II has flow rate=0; tunnels lead to vves AA, JJ".parse::<ValveLineInfo>() {
+            Err(ParseValveLineInfoError::InvalidFormat) => (),
+            _ => panic!("Expected error to occure"),
+        }
+        match "Valve I has flow rate=0; tunnels lead to valves AA, JJ".parse::<ValveLineInfo>() {
+            Err(ParseValveLineInfoError::InvalidValveId(_)) => (),
+            _ => panic!("Expected error to occure"),
+        }
+        match "Valve II has flow rate=0; tunnels lead to valves A, JJ".parse::<ValveLineInfo>() {
+            Err(ParseValveLineInfoError::InvalidValveId(_)) => (),
+            _ => panic!("Expected error to occure"),
+        }
+        match "Valve II has flow rate=3a4; tunnels lead to valves AA, JJ".parse::<ValveLineInfo>() {
+            Err(ParseValveLineInfoError::InvalidFlow(_)) => (),
+            _ => panic!("Expected error to occure"),
+        }
     }
 
     #[test]

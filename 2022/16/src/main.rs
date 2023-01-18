@@ -1,15 +1,13 @@
-use std::fs::read_to_string;
+use std::fs;
 
-use proboscidea_volcanium::Graph;
+use proboscidea_volcanium::Volcano;
 
 fn main() {
-    let graph = read_to_string("assets/example.txt")
-        .expect("File")
-        .parse::<Graph>()
-        .expect("Parsed Graph");
-    let solution = graph.get_solution(30);
-    println!(
-        "Score for 30 minutes: {}",
-        graph.get_score(solution.iter(), 30)
-    )
+    let infos = fs::read_to_string("assets/input.txt")
+        .expect("Read file")
+        .lines()
+        .map(|l| l.parse().unwrap())
+        .collect::<Vec<_>>();
+    let volcano = Volcano::from(infos);
+    println!("{}", volcano.get_max_flow(30));
 }

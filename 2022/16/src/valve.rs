@@ -2,14 +2,14 @@ use std::fmt;
 use std::num::ParseIntError;
 use std::str::FromStr;
 
-#[derive(PartialEq, Eq)]
-struct ValveId {
+#[derive(PartialEq, Eq, Clone)]
+pub struct ValveId {
     first: char,
     second: char,
 }
 
 #[derive(Debug)]
-enum ParseValveIdError {
+pub enum ParseValveIdError {
     TooShort(usize),
     TooLong(usize),
 }
@@ -35,10 +35,10 @@ impl fmt::Debug for ValveId {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-struct ValveLineInfo {
-    subject: ValveId,
-    flow: u32,
-    destinations: Vec<ValveId>,
+pub struct ValveLineInfo {
+    pub subject: ValveId,
+    pub flow: u32,
+    pub destinations: Vec<ValveId>,
 }
 
 impl FromStr for ValveLineInfo {
@@ -81,10 +81,10 @@ fn split_two<'a>(s: &'a str, dem: &str) -> Option<(&'a str, &'a str)> {
 }
 
 #[derive(Debug)]
-enum ParseValveLineInfoError {
+pub enum ParseValveLineInfoError {
     InvalidFormat,
     InvalidValveId(ParseValveIdError),
-    InvalidFlow(ParseIntError)
+    InvalidFlow(ParseIntError),
 }
 
 impl From<ParseValveIdError> for ParseValveLineInfoError {
@@ -99,13 +99,29 @@ impl From<ParseIntError> for ParseValveLineInfoError {
     }
 }
 
+#[derive(Debug)]
+pub struct Valve {
+    pub id: ValveId,
+    pub flow: u32,
+}
+
+impl From<&ValveLineInfo> for Valve {
+    fn from(line_info: &ValveLineInfo) -> Self {
+        Valve {
+            id: line_info.subject.clone(),
+            flow: line_info.flow,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::valve::split_two;
-    use crate::valve::ParseValveIdError;
-    use crate::valve::ParseValveLineInfoError;
-    use crate::valve::ValveId;
-    use crate::valve::ValveLineInfo;
+    use super::split_two;
+    use super::ParseValveIdError;
+    use super::ParseValveLineInfoError;
+    use super::Valve;
+    use super::ValveId;
+    use super::ValveLineInfo;
 
     #[test]
     fn test_parse_id() {
@@ -227,5 +243,18 @@ mod tests {
         assert_eq!(r, ("A", "B"));
         assert!(split_two("A;A;A", ";").is_none());
         assert!(split_two("A;A;A", ";").is_none());
+    }
+
+    fn test_valve_from_line() {
+        let valve_id = ValveId {
+            first: 'I',
+            second: 'J',
+        };
+        let line = ValveLineInfo {
+            subject: valve_id,
+            flow: 34,
+            destinations: vec![],
+        };
+        let valve = Valve::from(&line);
     }
 }

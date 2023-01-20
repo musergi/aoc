@@ -35,6 +35,56 @@ impl From<Vec<ValveLineInfo>> for Volcano {
 
 impl Volcano {
     pub fn get_max_flow(&self, minutes: u32) -> u32 {
+        let distances = self.distances();
+        let start = self
+            .nodes
+            .iter()
+            .position(|valve| valve.id == "AA".parse().unwrap())
+            .unwrap();
+        breadth_first_search(
+            start,
+            &|path| self.get_next_nodes(&distances, minutes, path),
+            &|path| self.get_path_flow(&distances, minutes, path),
+        )
+        .unwrap()
+        .metric
+    }
+
+    pub fn get_max_flow_elefant(&self, minutes: u32) -> u32 {
+        let distances = self.distances();
+        let start = self
+            .nodes
+            .iter()
+            .position(|valve| valve.id == "AA".parse().unwrap())
+            .unwrap();
+        breadth_first_search(
+            (start, start),
+            &|path| self.get_next_pairs(&distances, minutes, path),
+            &|path| self.get_paths_flow(&distances, minutes, path),
+        )
+        .unwrap()
+        .metric
+    }
+
+    fn get_next_pairs(
+        &self,
+        distances: &Vec<Vec<u32>>,
+        minutes: u32,
+        path: &[(usize, usize)],
+    ) -> Vec<(usize, usize)> {
+        vec![]
+    }
+
+    fn get_paths_flow(
+        &self,
+        distances: &Vec<Vec<u32>>,
+        minutes: u32,
+        path: &[(usize, usize)],
+    ) -> u32 {
+        0
+    }
+
+    fn distances(&self) -> Vec<Vec<u32>> {
         let mut distances = (0..self.nodes.len())
             .map(|node| {
                 (0..self.nodes.len())
@@ -52,18 +102,7 @@ impl Volcano {
             })
             .collect::<Vec<_>>();
         floyd_warshall(&mut distances);
-        let start = self
-            .nodes
-            .iter()
-            .position(|valve| valve.id == "AA".parse().unwrap())
-            .unwrap();
-        breadth_first_search(
-            start,
-            &|path| self.get_next_nodes(&distances, minutes, path),
-            &|path| self.get_path_flow(&distances, minutes, path),
-        )
-        .unwrap()
-        .metric
+        distances
     }
 
     fn get_next_nodes(

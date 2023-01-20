@@ -1,17 +1,20 @@
 use std::collections::VecDeque;
 
-pub struct Path {
-    pub path: Vec<usize>,
+pub struct Path<T> {
+    pub path: Vec<T>,
     pub metric: u32,
 }
 
-pub fn breadth_first_search(
-    start: usize,
-    edges: &dyn Fn(&[usize]) -> Vec<usize>,
-    metric: &dyn Fn(&[usize]) -> u32,
-) -> Option<Path> {
+pub fn breadth_first_search<T>(
+    start: T,
+    edges: &dyn Fn(&[T]) -> Vec<T>,
+    metric: &dyn Fn(&[T]) -> u32,
+) -> Option<Path<T>>
+where
+    T: Clone,
+{
     let mut queue = VecDeque::new();
-    let mut best: Option<Path> = None;
+    let mut best: Option<Path<T>> = None;
 
     queue.push_back(vec![start]);
 
@@ -33,7 +36,7 @@ pub fn breadth_first_search(
         let neighbors = edges(&current_path);
         for neighbor in neighbors.iter() {
             let mut new_path = current_path.clone();
-            new_path.push(*neighbor);
+            new_path.push(neighbor.clone());
             queue.push_back(new_path);
         }
     }

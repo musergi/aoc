@@ -1,5 +1,101 @@
 use std::{collections::HashMap, convert::Infallible, fs, str::FromStr};
 
+struct Problem {
+    monkeys: HashMap<String, Monkey>,
+}
+
+impl FromStr for Problem {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let monkeys = s
+            .lines()
+            .map(|line| line.parse().unwrap())
+            .map(|monkey: Monkey| (monkey.name.clone(), monkey))
+            .collect();
+        Ok(Self { monkeys })
+    }
+}
+
+impl Problem {
+    fn value(&self, name: &str) -> &MonkeyValue {
+        &self.monkeys.get(name).unwrap().value
+    }
+
+    fn evaluate(&self, name: &str) -> i64 {
+        match self.value(name) {
+            MonkeyValue::Literal(value) => *value,
+            MonkeyValue::Operation {
+                operator,
+                left,
+                right,
+            } => {
+                let left = self.evaluate(left);
+                let right = self.evaluate(right);
+                operator.apply(left, right)
+            }
+        }
+    }
+
+    fn equality(&self, equality: &str, unkown: &str) -> i64 {
+        match self.value(equality) {
+            MonkeyValue::Literal(_) => panic!(),
+            MonkeyValue::Operation { left, right, .. } => {
+                match (
+                    self.has_unkown(left, unkown),
+                    self.has_unkown(right, unkown),
+                ) {
+                    (true, false) => self.solve(self.evaluate(right), left, unkown),
+                    (false, true) => self.solve(self.evaluate(left), right, unkown),
+                    (_, _) => panic!(),
+                }
+            }
+        }
+    }
+
+    fn has_unkown(&self, name: &str, unkown: &str) -> bool {
+        match (name == unkown, self.value(name)) {
+            (true, _) => true,
+            (false, MonkeyValue::Literal(_)) => false,
+            (false, MonkeyValue::Operation { left, right, .. }) => {
+                self.has_unkown(left, unkown) || self.has_unkown(right, unkown)
+            }
+        }
+    }
+
+    fn solve(&self, result: i64, name: &str, unkown: &str) -> i64 {
+        if name == unkown {
+            result
+        } else {
+            if let MonkeyValue::Operation {
+                operator,
+                left,
+                right,
+            } = self.value(name)
+            {
+                match (
+                    self.has_unkown(left, unkown),
+                    self.has_unkown(right, unkown),
+                ) {
+                    (true, false) => self.solve(
+                        operator.missing_left(result, self.evaluate(right)),
+                        left,
+                        unkown,
+                    ),
+                    (false, true) => self.solve(
+                        operator.missing_right(result, self.evaluate(left)),
+                        right,
+                        unkown,
+                    ),
+                    (_, _) => panic!(),
+                }
+            } else {
+                panic!()
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 struct Monkey {
     name: String,
@@ -53,6 +149,34 @@ enum Operator {
     Mul,
     Div,
 }
+impl Operator {
+    fn apply(&self, left: i64, right: i64) -> i64 {
+        match self {
+            Operator::Add => left + right,
+            Operator::Sub => left - right,
+            Operator::Mul => left * right,
+            Operator::Div => left / right,
+        }
+    }
+
+    fn missing_left(&self, result: i64, right: i64) -> i64 {
+        match self {
+            Operator::Add => result - right,
+            Operator::Sub => result + right,
+            Operator::Mul => result / right,
+            Operator::Div => result * right,
+        }
+    }
+
+    fn missing_right(&self, result: i64, left: i64) -> i64 {
+        match self {
+            Operator::Add => result - left,
+            Operator::Sub => left - result,
+            Operator::Mul => result / left,
+            Operator::Div => left / result,
+        }
+    }
+}
 
 impl FromStr for Operator {
     type Err = Infallible;
@@ -70,163 +194,9 @@ impl FromStr for Operator {
 
 fn main() {
     let s = fs::read_to_string("assets/input.txt").unwrap();
-    let monkeys: HashMap<_, _> = s
-        .lines()
-        .map(|line| line.parse().unwrap())
-        .map(|Monkey { name, value }: Monkey| (name, value))
-        .collect();
-    let part1 = resolve(&monkeys, monkeys.get("root").unwrap());
+    let problem: Problem = s.parse().unwrap();
+    let part1 = problem.evaluate("root");
     println!("Part 1: {}", part1);
-    if let MonkeyValue::Operation {
-        left,
-        right,
-        ..
-    } = monkeys.get("root").unwrap() {
-        let left_v = try_resolve(&monkeys, &left, monkeys.get(left).unwrap());
-        let right_v = try_resolve(&monkeys, &right, monkeys.get(right).unwrap());
-        let part2 = match (left_v, right_v) {
-            (Some(v), None) => backprop(&monkeys, v, right, monkeys.get(right).unwrap()),
-            (None, Some(v)) => backprop(&monkeys, v, left, monkeys.get(left).unwrap()),
-            (_, _) => panic!("invalid input"),
-        }.unwrap();
-        println!("Part 2: {}", part2);
-    }
-}
-
-fn resolve(expressions: &HashMap<String, MonkeyValue>, value: &MonkeyValue) -> i64 {
-    match value {
-        MonkeyValue::Literal(v) => *v,
-        MonkeyValue::Operation {
-            operator,
-            left,
-            right,
-        } => match operator {
-            Operator::Add => {
-                resolve(expressions, expressions.get(left).unwrap())
-                    + resolve(expressions, expressions.get(right).unwrap())
-            }
-            Operator::Sub => {
-                resolve(expressions, expressions.get(left).unwrap())
-                    - resolve(expressions, expressions.get(right).unwrap())
-            }
-            Operator::Mul => {
-                resolve(expressions, expressions.get(left).unwrap())
-                    * resolve(expressions, expressions.get(right).unwrap())
-            }
-            Operator::Div => {
-                resolve(expressions, expressions.get(left).unwrap())
-                    / resolve(expressions, expressions.get(right).unwrap())
-            }
-        },
-    }
-}
-
-fn try_resolve(
-    expressions: &HashMap<String, MonkeyValue>,
-    key: &str,
-    value: &MonkeyValue,
-) -> Option<i64> {
-    if key == "humn" {
-        None
-    } else {
-        Some(match value {
-            MonkeyValue::Literal(v) => *v,
-            MonkeyValue::Operation {
-                operator,
-                left,
-                right,
-            } => match operator {
-                Operator::Add => {
-                    try_resolve(expressions, &left, expressions.get(left).unwrap())?
-                        + try_resolve(expressions, &right, expressions.get(right).unwrap())?
-                }
-                Operator::Sub => {
-                    try_resolve(expressions, &left, expressions.get(left).unwrap())?
-                        - try_resolve(expressions, &right, expressions.get(right).unwrap())?
-                }
-                Operator::Mul => {
-                    try_resolve(expressions, &left, expressions.get(left).unwrap())?
-                        * try_resolve(expressions, &right, expressions.get(right).unwrap())?
-                }
-                Operator::Div => {
-                    try_resolve(expressions, &left, expressions.get(left).unwrap())?
-                        / try_resolve(expressions, &right, expressions.get(right).unwrap())?
-                }
-            },
-        })
-    }
-}
-
-fn backprop(
-    expressions: &HashMap<String, MonkeyValue>,
-    expected_value: i64,
-    name: &str,
-    value: &MonkeyValue,
-) -> Option<i64> {
-    if name == "humn" {
-        Some(expected_value)
-    } else {
-        match value {
-            MonkeyValue::Literal(v) => Some(*v),
-            MonkeyValue::Operation {
-                operator,
-                left,
-                right,
-            } => {
-                let left_value = try_resolve(expressions, left, expressions.get(left).unwrap());
-                let right_value = try_resolve(expressions, right, expressions.get(right).unwrap());
-                match (operator, left_value, right_value) {
-                    (Operator::Add, Some(v), None) => backprop(
-                        expressions,
-                        expected_value - v,
-                        right,
-                        expressions.get(right).unwrap(),
-                    ),
-                    (Operator::Add, None, Some(v)) => backprop(
-                        expressions,
-                        expected_value - v,
-                        left,
-                        expressions.get(left).unwrap(),
-                    ),
-                    (Operator::Sub, Some(v), None) => backprop(
-                        expressions,
-                        v - expected_value,
-                        right,
-                        expressions.get(right).unwrap(),
-                    ),
-                    (Operator::Sub, None, Some(v)) => backprop(
-                        expressions,
-                        expected_value + v,
-                        left,
-                        expressions.get(left).unwrap(),
-                    ),
-                    (Operator::Mul, Some(v), None) => backprop(
-                        expressions,
-                        expected_value / v,
-                        right,
-                        expressions.get(right).unwrap(),
-                    ),
-                    (Operator::Mul, None, Some(v)) => backprop(
-                        expressions,
-                        expected_value / v,
-                        left,
-                        expressions.get(left).unwrap(),
-                    ),
-                    (Operator::Div, Some(v), None) => backprop(
-                        expressions,
-                        v / expected_value,
-                        right,
-                        expressions.get(right).unwrap(),
-                    ),
-                    (Operator::Div, None, Some(v)) => backprop(
-                        expressions,
-                        expected_value * v,
-                        left,
-                        expressions.get(left).unwrap(),
-                    ),
-                    (_, _, _) => panic!("unsolvable"),
-                }
-            }
-        }
-    }
+    let part2 = problem.equality("root", "humn");
+    println!("Part 2: {}", part2);
 }

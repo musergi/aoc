@@ -109,6 +109,7 @@ impl FromStr for Problem {
                 last_letter = idx + 1;
             }
         }
+        path.push(Step::Advance(path_string[last_letter..].parse().unwrap()));
 
         Ok(Self {
             board: Board { empty, wall },

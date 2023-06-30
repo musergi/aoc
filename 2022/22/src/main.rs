@@ -11,11 +11,8 @@ impl Problem {
         let mut position = self.board.starting();
         let mut facing = Facing::Right;
         for step in self.path.iter() {
-            println!("{:?}", step);
             self.apply(&mut position, &mut facing, step);
-            println!("{:?}", position);
         }
-        println!("{:?}", position);
         position.0 * 1000 + position.1 * 4 + facing.score()
     }
 
@@ -31,50 +28,43 @@ impl Problem {
     fn apply_advance(&self, position: &mut (i32, i32), facing: &Facing, count: i32) {
         let delta = facing.delta();
         for _ in 0..count {
-            let next_position = (position.0 + delta.0, position.1 + delta.1);
+            let mut next_position = (position.0 + delta.0, position.1 + delta.1);
+            let exists = self.board.empty.contains(&next_position)
+                || self.board.wall.contains(&next_position);
+            if !exists {
+                next_position = self.wrap_position(position, facing);
+            }
             if self.board.empty.contains(&next_position) {
                 *position = next_position;
             } else if self.board.wall.contains(&next_position) {
                 break;
             } else {
-                let next_position = match facing {
-                    Facing::Right => self
-                        .board
-                        .empty
-                        .union(&self.board.wall)
-                        .filter(|(row, _)| *row == position.0)
-                        .min_by(|left, right| left.1.cmp(&right.1))
-                        .unwrap(),
-                    Facing::Left => self
-                        .board
-                        .empty
-                        .union(&self.board.wall)
-                        .filter(|(row, _)| *row == position.0)
-                        .max_by(|left, right| left.1.cmp(&right.1))
-                        .unwrap(),
-                    Facing::Down => self
-                        .board
-                        .empty
-                        .union(&self.board.wall)
-                        .filter(|(_, col)| *col == position.1)
-                        .min_by(|left, right| left.0.cmp(&right.0))
-                        .unwrap(),
-                    Facing::Up => self
-                        .board
-                        .empty
-                        .union(&self.board.wall)
-                        .filter(|(_, col)| *col == position.1)
-                        .max_by(|left, right| left.0.cmp(&right.0))
-                        .unwrap(),
-                }
-                .clone();
-                if self.board.empty.contains(&next_position) {
-                    *position = next_position;
-                } else if self.board.wall.contains(&next_position) {
-                    break;
-                }
+                panic!("error");
             }
         }
+    }
+
+    fn wrap_position(&self, position: &(i32, i32), facing: &Facing) -> (i32, i32) {
+        let tiles = self.board.empty.union(&self.board.wall);
+        match facing {
+            Facing::Right => tiles
+                .filter(|(row, _)| *row == position.0)
+                .min_by(|left, right| left.1.cmp(&right.1))
+                .unwrap(),
+            Facing::Left => tiles
+                .filter(|(row, _)| *row == position.0)
+                .max_by(|left, right| left.1.cmp(&right.1))
+                .unwrap(),
+            Facing::Down => tiles
+                .filter(|(_, col)| *col == position.1)
+                .min_by(|left, right| left.0.cmp(&right.0))
+                .unwrap(),
+            Facing::Up => tiles
+                .filter(|(_, col)| *col == position.1)
+                .max_by(|left, right| left.0.cmp(&right.0))
+                .unwrap(),
+        }
+        .clone()
     }
 }
 
@@ -166,7 +156,7 @@ impl Facing {
             Facing::Right => (0, 1),
             Facing::Down => (1, 0),
             Facing::Left => (0, -1),
-            Facing::Up => (-1, 1),
+            Facing::Up => (-1, 0),
         }
     }
 

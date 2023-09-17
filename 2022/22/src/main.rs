@@ -6,47 +6,54 @@ struct Problem {
     path: Vec<Step>,
 }
 
-impl Problem {
-    fn password(&self) -> i32 {
-        let mut position = self.board.starting();
-        let mut facing = Facing::Right;
-        for step in self.path.iter() {
-            self.apply(&mut position, &mut facing, step);
+#[derive(Debug)]
+struct State {
+    position: (i32, i32),
+    facing: Facing,
+}
+
+impl State {
+    fn new(position: (i32, i32)) -> Self {
+        Self {
+            position,
+            facing: Facing::Right,
         }
+    }
+
+    fn from_delta(&self, delta: (i32, i32)) -> Self {
+        Self {
+            position: (self.position.0 + delta.0, self.position.1 + delta.1),
+            facing: self.facing,
+        }
+    }
+
+    fn score(&self) -> i32 {
+        let State { position, facing } = self;
         position.0 * 1000 + position.1 * 4 + facing.score()
     }
+}
 
-    fn apply(&self, position: &mut (i32, i32), facing: &mut Facing, step: &Step) {
-        match step {
-            Step::Advance(n) => self.apply_advance(position, facing, *n),
-            Step::Rotate(rotation) => {
-                *facing = facing.rotate(rotation);
-            }
-        }
-    }
+trait WrapHandler {
+    fn wrap_position(
+        &self,
+        state: &State,
+        empty: &HashSet<(i32, i32)>,
+        wall: &HashSet<(i32, i32)>,
+    ) -> State;
+}
 
-    fn apply_advance(&self, position: &mut (i32, i32), facing: &Facing, count: i32) {
-        let delta = facing.delta();
-        for _ in 0..count {
-            let mut next_position = (position.0 + delta.0, position.1 + delta.1);
-            let exists = self.board.empty.contains(&next_position)
-                || self.board.wall.contains(&next_position);
-            if !exists {
-                next_position = self.wrap_position(position, facing);
-            }
-            if self.board.empty.contains(&next_position) {
-                *position = next_position;
-            } else if self.board.wall.contains(&next_position) {
-                break;
-            } else {
-                panic!("error");
-            }
-        }
-    }
+struct Part1;
 
-    fn wrap_position(&self, position: &(i32, i32), facing: &Facing) -> (i32, i32) {
-        let tiles = self.board.empty.union(&self.board.wall);
-        match facing {
+impl WrapHandler for Part1 {
+    fn wrap_position(
+        &self,
+        state: &State,
+        empty: &HashSet<(i32, i32)>,
+        wall: &HashSet<(i32, i32)>,
+    ) -> State {
+        let State { position, facing } = state;
+        let tiles = empty.union(wall);
+        let position = match facing {
             Facing::Right => tiles
                 .filter(|(row, _)| *row == position.0)
                 .min_by(|left, right| left.1.cmp(&right.1))
@@ -64,7 +71,52 @@ impl Problem {
                 .max_by(|left, right| left.0.cmp(&right.0))
                 .unwrap(),
         }
-        .clone()
+        .clone();
+        State {
+            position,
+            facing: state.facing,
+        }
+    }
+}
+
+impl Problem {
+    fn password(&self, wrap: impl WrapHandler) -> i32 {
+        let starting_position = self.board.starting();
+        let mut state = State::new(starting_position);
+        for step in self.path.iter() {
+            self.apply(&mut state, step, &wrap);
+        }
+        state.score()
+    }
+
+    fn apply(&self, state: &mut State, step: &Step, wrap: &impl WrapHandler) {
+        match step {
+            Step::Advance(n) => self.apply_advance(state, *n, wrap),
+            Step::Rotate(rotation) => {
+                state.facing = state.facing.rotate(rotation);
+            }
+        }
+    }
+
+    fn apply_advance(&self, state: &mut State, count: i32, wrap: &impl WrapHandler) {
+        let delta = state.facing.delta();
+        for _ in 0..count {
+            let mut next_state = state.from_delta(delta);
+            if !self.exists(&next_state.position) {
+                next_state = wrap.wrap_position(&state, &self.board.empty, &self.board.wall);
+            }
+            if self.board.empty.contains(&next_state.position) {
+                *state = next_state;
+            } else if self.board.wall.contains(&next_state.position) {
+                break;
+            } else {
+                panic!("error");
+            }
+        }
+    }
+
+    fn exists(&self, position: &(i32, i32)) -> bool {
+        self.board.empty.contains(position) || self.board.wall.contains(position)
     }
 }
 
@@ -130,7 +182,7 @@ impl Board {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum Facing {
     Right,
     Down,
@@ -186,6 +238,6 @@ enum Rotation {
 fn main() {
     let s = fs::read_to_string("assets/input.txt").unwrap();
     let problem: Problem = s.parse().unwrap();
-    let part1 = problem.password();
+    let part1 = problem.password(Part1);
     println!("Part 1: {}", part1);
 }

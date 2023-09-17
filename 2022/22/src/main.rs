@@ -1,4 +1,9 @@
-use std::{collections::HashSet, convert::Infallible, fs, str::FromStr};
+use std::{
+    collections::{HashMap, HashSet},
+    convert::Infallible,
+    fs,
+    str::FromStr,
+};
 
 #[derive(Debug)]
 struct Problem {
@@ -6,7 +11,7 @@ struct Problem {
     path: Vec<Step>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct State {
     position: (i32, i32),
     facing: Facing,
@@ -29,53 +34,294 @@ impl State {
 
     fn score(&self) -> i32 {
         let State { position, facing } = self;
-        position.0 * 1000 + position.1 * 4 + facing.score()
+        (position.0 + 1) * 1000 + (position.1 + 1) * 4 + facing.score()
     }
 }
 
 trait WrapHandler {
-    fn wrap_position(
-        &self,
-        state: &State,
-        empty: &HashSet<(i32, i32)>,
-        wall: &HashSet<(i32, i32)>,
-    ) -> State;
+    fn wrap_position(&self, state: &State, board: &Board) -> State;
 }
 
 struct Part1;
 
 impl WrapHandler for Part1 {
-    fn wrap_position(
-        &self,
-        state: &State,
-        empty: &HashSet<(i32, i32)>,
-        wall: &HashSet<(i32, i32)>,
-    ) -> State {
+    fn wrap_position(&self, state: &State, board: &Board) -> State {
         let State { position, facing } = state;
-        let tiles = empty.union(wall);
+        let tiles = board.empty.union(&board.wall);
         let position = match facing {
             Facing::Right => tiles
                 .filter(|(row, _)| *row == position.0)
-                .min_by(|left, right| left.1.cmp(&right.1))
-                .unwrap(),
+                .min_by_key(|val| val.1),
             Facing::Left => tiles
                 .filter(|(row, _)| *row == position.0)
-                .max_by(|left, right| left.1.cmp(&right.1))
-                .unwrap(),
+                .max_by_key(|val| val.1),
             Facing::Down => tiles
                 .filter(|(_, col)| *col == position.1)
-                .min_by(|left, right| left.0.cmp(&right.0))
-                .unwrap(),
+                .min_by_key(|val| val.0),
             Facing::Up => tiles
                 .filter(|(_, col)| *col == position.1)
-                .max_by(|left, right| left.0.cmp(&right.0))
-                .unwrap(),
+                .max_by_key(|val| val.0),
         }
+        .unwrap()
         .clone();
         State {
             position,
             facing: state.facing,
         }
+    }
+}
+
+struct Part2;
+
+struct FaceSeq([u8; 4]);
+
+impl FaceSeq {
+    fn generate_seq(&self, sub: &[u8; 2]) -> Option<[u8; 4]> {
+        let starting_index = self.0.iter().position(|vertex| *vertex == sub[0])?;
+        if sub[1] == self.0[Self::next(starting_index)] {
+            Some([
+                self.0[starting_index],
+                self.0[(0..1).fold(starting_index, |a, _| Self::next(a))],
+                self.0[(0..2).fold(starting_index, |a, _| Self::next(a))],
+                self.0[(0..3).fold(starting_index, |a, _| Self::next(a))],
+            ])
+        } else {
+            None
+        }
+    }
+
+    fn next(idx: usize) -> usize {
+        (idx + 1) % 4
+    }
+}
+
+const FACE_SEQS: [FaceSeq; 6] = [
+    FaceSeq([0, 1, 2, 3]),
+    FaceSeq([1, 5, 6, 2]),
+    FaceSeq([5, 4, 7, 6]),
+    FaceSeq([4, 0, 3, 7]),
+    FaceSeq([4, 5, 1, 0]),
+    FaceSeq([3, 2, 6, 7]),
+];
+
+impl WrapHandler for Part2 {
+    fn wrap_position(&self, state: &State, board: &Board) -> State {
+        let tiles: HashSet<_> = board.empty.union(&board.wall).cloned().collect();
+        let grid_size = grid_size(&tiles);
+        let mut lut: HashMap<(i32, i32), HashMap<Facing, [u8; 2]>> = HashMap::new();
+
+        let grid_tile = to_grid(board.starting(), grid_size);
+        build_face_lut(&mut lut, &tiles, grid_tile, Facing::Up, [0, 1], grid_size);
+
+        let src_tile = to_grid(state.position, grid_size);
+        let src_side = lut.get(&src_tile).unwrap().get(&state.facing).unwrap();
+        let dst_side = [src_side[1], src_side[0]];
+        let (dst_tile, facing) = lut
+            .iter()
+            .find_map(|(tile, map)| {
+                map.iter()
+                    .find(|(_, side)| side[0] == dst_side[0] && side[1] == dst_side[1])
+                    .map(|(facing, _)| (tile, facing))
+            })
+            .unwrap();
+        let src_index = side_index(&src_tile, grid_size, state);
+        let dst_index = grid_size as usize - 1 - src_index;
+        let position = side_tiles(&dst_tile, *facing, grid_size).remove(dst_index);
+        let facing = facing.rotate(&Rotation::Right).rotate(&Rotation::Right);
+        State { position, facing }
+    }
+}
+
+fn side_index(tile: &(i32, i32), grid_size: i32, state: &State) -> usize {
+    side_tiles(tile, state.facing, grid_size)
+        .into_iter()
+        .position(|position| position == state.position)
+        .unwrap()
+}
+
+fn side_tiles(tile: &(i32, i32), facing: Facing, grid_size: i32) -> Vec<(i32, i32)> {
+    (0..grid_size)
+        .into_iter()
+        .map(|i| match facing {
+            Facing::Up => (0, i),
+            Facing::Down => (grid_size - 1, grid_size - 1 - i),
+            Facing::Right => (i, grid_size - 1),
+            Facing::Left => (grid_size - 1 - i, 0),
+        })
+        .map(|position| {
+            (
+                position.0 + tile.0 * grid_size,
+                position.1 + tile.1 * grid_size,
+            )
+        })
+        .collect()
+}
+
+fn build_face_lut(
+    lut: &mut HashMap<(i32, i32), HashMap<Facing, [u8; 2]>>,
+    tiles: &HashSet<(i32, i32)>,
+    position: (i32, i32),
+    facing: Facing,
+    restriction: [u8; 2],
+    grid_size: i32,
+) {
+    let map = build_facing_map(facing, restriction);
+    lut.insert(position, map.clone());
+    for facing in FACINGS {
+        let delta = facing.delta();
+        let new_position = (position.0 + delta.0, position.1 + delta.1);
+        if !lut.contains_key(&new_position)
+            && tiles.contains(&(new_position.0 * grid_size, new_position.1 * grid_size))
+        {
+            let reverse_facing = facing.rotate(&Rotation::Right).rotate(&Rotation::Right);
+            let side = map.get(&facing).unwrap();
+            let restriction = [side[1], side[0]];
+            build_face_lut(
+                lut,
+                tiles,
+                new_position,
+                reverse_facing,
+                restriction,
+                grid_size,
+            );
+        }
+    }
+}
+
+fn build_facing_map(mut facing: Facing, vertices: [u8; 2]) -> HashMap<Facing, [u8; 2]> {
+    let seq = FACE_SEQS
+        .iter()
+        .find_map(|seq| seq.generate_seq(&vertices))
+        .unwrap();
+    let mut res = HashMap::new();
+    for i in 0..4 {
+        res.insert(facing, [seq[i], seq[FaceSeq::next(i)]]);
+        facing = facing.rotate(&Rotation::Right);
+    }
+    res
+}
+
+fn to_grid(position: (i32, i32), grid_size: i32) -> (i32, i32) {
+    (position.0 / grid_size, position.1 / grid_size)
+}
+
+fn grid_size(tiles: &HashSet<(i32, i32)>) -> i32 {
+    let mut sizes = HashSet::new();
+    let rows: HashSet<_> = tiles.iter().map(|tile| tile.1).collect();
+    for row in rows {
+        let row_tiles: Vec<_> = tiles
+            .iter()
+            .filter(|tile| tile.1 == row)
+            .map(|tile| tile.0)
+            .collect();
+        let min = row_tiles.iter().min();
+        let max = row_tiles.iter().max();
+        if let (Some(min), Some(max)) = (min, max) {
+            sizes.insert(max - min + 1);
+        }
+    }
+    let cols: HashSet<_> = tiles.iter().map(|tile| tile.0).collect();
+    for col in cols {
+        let col_tiles: Vec<_> = tiles
+            .iter()
+            .filter(|tile| tile.0 == col)
+            .map(|tile| tile.1)
+            .collect();
+        let min = col_tiles.iter().min();
+        let max = col_tiles.iter().max();
+        if let (Some(min), Some(max)) = (min, max) {
+            sizes.insert(max - min + 1);
+        }
+    }
+    sizes.into_iter().reduce(gcd).unwrap()
+}
+
+fn gcd(mut n: i32, mut m: i32) -> i32 {
+    assert!(n != 0 && m != 0);
+    while m != 0 {
+        if m < n {
+            std::mem::swap(&mut m, &mut n);
+        }
+        m %= n;
+    }
+    n
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn build_t_field(t: i32) -> HashSet<(i32, i32)> {
+        let mut empty = HashSet::new();
+        for i in 0..t * 3 {
+            for j in 0..t {
+                empty.insert((j, i));
+            }
+        }
+        for i in t..t * 4 {
+            for j in 0..t {
+                empty.insert((i, j + t));
+            }
+        }
+        empty
+    }
+
+    #[test]
+    fn grid_size_for_size_2() {
+        let empty = build_t_field(2);
+        assert_eq!(grid_size(&empty), 2);
+    }
+
+    #[test]
+    fn grid_size_for_size_3() {
+        let empty = build_t_field(3);
+        assert_eq!(grid_size(&empty), 3);
+    }
+
+    #[test]
+    fn grid_size_for_size_4() {
+        let empty = build_t_field(4);
+        assert_eq!(grid_size(&empty), 4);
+    }
+
+    #[test]
+    fn size2() {
+        let empty = build_t_field(2);
+        let wall = HashSet::new();
+        let board = Board { empty, wall };
+        let state = State {
+            position: (1, 1),
+            facing: Facing::Down,
+        };
+        assert_eq!(
+            Part2.wrap_position(&state, &board),
+            State {
+                position: (2, 2),
+                facing: Facing::Right
+            }
+        );
+        let state = State {
+            position: (1, 0),
+            facing: Facing::Left,
+        };
+        assert_eq!(
+            Part2.wrap_position(&state, &board),
+            State {
+                position: (4, 2),
+                facing: Facing::Right
+            }
+        );
+        let state = State {
+            position: (0, 2),
+            facing: Facing::Up,
+        };
+        assert_eq!(
+            Part2.wrap_position(&state, &board),
+            State {
+                position: (7, 2),
+                facing: Facing::Up,
+            }
+        );
     }
 }
 
@@ -99,11 +345,11 @@ impl Problem {
     }
 
     fn apply_advance(&self, state: &mut State, count: i32, wrap: &impl WrapHandler) {
-        let delta = state.facing.delta();
         for _ in 0..count {
+            let delta = state.facing.delta();
             let mut next_state = state.from_delta(delta);
             if !self.exists(&next_state.position) {
-                next_state = wrap.wrap_position(&state, &self.board.empty, &self.board.wall);
+                next_state = wrap.wrap_position(&state, &self.board);
             }
             if self.board.empty.contains(&next_state.position) {
                 *state = next_state;
@@ -127,12 +373,12 @@ impl FromStr for Problem {
         let mut it = s.lines();
         let mut empty = HashSet::new();
         let mut wall = HashSet::new();
-        let mut row = 1;
+        let mut row = 0;
         while let Some(line) = it.next() {
             if line.is_empty() {
                 break;
             }
-            let mut col = 1;
+            let mut col = 0;
             for c in line.chars() {
                 match c {
                     '.' => empty.insert((row, col)),
@@ -182,7 +428,9 @@ impl Board {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+const FACINGS: [Facing; 4] = [Facing::Right, Facing::Down, Facing::Left, Facing::Up];
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum Facing {
     Right,
     Down,
@@ -240,4 +488,6 @@ fn main() {
     let problem: Problem = s.parse().unwrap();
     let part1 = problem.password(Part1);
     println!("Part 1: {}", part1);
+    let part2 = problem.password(Part2);
+    println!("Part 2: {}", part2);
 }

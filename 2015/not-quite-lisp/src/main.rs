@@ -1,16 +1,14 @@
-const INPUT_FILE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/input.txt");
+use std::fmt::Display;
 
 fn main() {
-    let input = std::fs::read_to_string(INPUT_FILE).unwrap();
-    println!("Part 1: {}", part1(&input));
-    println!("Part 2: {}", part2(&input));
+    aoc::aoc_main(aoc::input!(), part1, part2);
 }
 
-fn part1(input: &str) -> impl std::fmt::Display {
+fn part1(input: &str) -> impl Display {
     input.chars().into_iter().map(get_value).sum::<i32>()
 }
 
-fn part2(input: &str) -> impl std::fmt::Display {
+fn part2(input: &str) -> impl Display {
     find_index(input)
         .map(|v| v.to_string())
         .unwrap_or("Not Found".to_string())

@@ -1,7 +1,6 @@
 [package]
-name = "not-quite-lisp"
+name = "aoc"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-aoc = { workspace = true }

@@ -1,3 +1,14 @@
 [workspace]
 
-members = ["2015/not-quite-lisp"]
+resolver = "2"
+members = [
+    "aoc",
+    "2015/not-quite-lisp",
+    "2015/i-was-told-there-would-be-no-math",
+    "2015/perfectly-spherical-houses-in-a-vacuum",
+]
+
+
+[workspace.dependencies]
+
+aoc = { path = "aoc" }

@@ -3,5 +3,26 @@
 version = 3
 
 [[package]]
+name = "aoc"
+version = "0.1.0"
+
+[[package]]
+name = "i-was-told-there-would-be-no-math"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+]
+
+[[package]]
 name = "not-quite-lisp"
 version = "0.1.0"
+dependencies = [
+ "aoc",
+]
+
+[[package]]
+name = "perfectly-spherical-houses-in-a-vacuum"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+]

@@ -1,9 +1,4 @@
-use std::{
-    collections::HashSet,
-    fmt::Display,
-    hash::Hash,
-    ops::{Add, AddAssign},
-};
+use std::{collections::HashSet, fmt::Display, hash::Hash, ops::AddAssign};
 
 fn main() {
     aoc::aoc_main(aoc::input!(), part1, part2);

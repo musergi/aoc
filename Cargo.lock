@@ -9,6 +9,9 @@ version = "0.1.0"
 [[package]]
 name = "doesnt-he-have-intern-elves-for-this"
 version = "0.1.0"
+dependencies = [
+ "aoc",
+]
 
 [[package]]
 name = "i-was-told-there-would-be-no-math"

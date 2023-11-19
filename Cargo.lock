@@ -7,6 +7,10 @@ name = "aoc"
 version = "0.1.0"
 
 [[package]]
+name = "doesnt-he-have-intern-elves-for-this"
+version = "0.1.0"
+
+[[package]]
 name = "i-was-told-there-would-be-no-math"
 version = "0.1.0"
 dependencies = [
@@ -22,6 +26,13 @@ dependencies = [
 
 [[package]]
 name = "perfectly-spherical-houses-in-a-vacuum"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+]
+
+[[package]]
+name = "the-ideal-stocking-stuffer"
 version = "0.1.0"
 dependencies = [
  "aoc",

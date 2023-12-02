@@ -31,7 +31,7 @@ mod md5;
 
 #[cfg(test)]
 mod tests {
-    use crate::{md5::hash, part1};
+    use crate::part1;
 
     #[test]
     fn example1() {

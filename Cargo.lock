@@ -42,6 +42,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "some-assembly-required"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+]
+
+[[package]]
 name = "the-ideal-stocking-stuffer"
 version = "0.1.0"
 dependencies = [

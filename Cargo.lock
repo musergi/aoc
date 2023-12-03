@@ -7,6 +7,13 @@ name = "aoc"
 version = "0.1.0"
 
 [[package]]
+name = "cube-conundrum"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+]
+
+[[package]]
 name = "doesnt-he-have-intern-elves-for-this"
 version = "0.1.0"
 dependencies = [

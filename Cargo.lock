@@ -54,3 +54,10 @@ version = "0.1.0"
 dependencies = [
  "aoc",
 ]
+
+[[package]]
+name = "trebuchet"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+]

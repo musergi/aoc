@@ -12,6 +12,7 @@ members = [
     "2015/some-assembly-required",
     "2023/trebuchet",
     "2023/cube-conundrum",
+    "2023/gear-ratios",
 ]
 
 

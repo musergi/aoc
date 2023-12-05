@@ -56,6 +56,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "scratchcards"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+]
+
+[[package]]
 name = "some-assembly-required"
 version = "0.1.0"
 dependencies = [

@@ -35,6 +35,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "if-you-give-a-seed-a-fertilizer"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+]
+
+[[package]]
 name = "not-quite-lisp"
 version = "0.1.0"
 dependencies = [

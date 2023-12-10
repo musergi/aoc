@@ -1,4 +1,5 @@
 use game::Game;
+use hand::{Hand, NewHand, OldHand};
 use std::fmt::Display;
 
 mod game;
@@ -10,13 +11,20 @@ fn main() {
 }
 
 fn part1(input: &str) -> impl Display {
-    input
-        .parse::<Game>()
-        .map(|game| game.winings())
-        .map(|value| value.to_string())
-        .unwrap_or_else(|err| err.to_string())
+    common(input, OldHand::new)
 }
 
-fn part2(_input: &str) -> impl Display {
-    0
+fn part2(input: &str) -> impl Display {
+    common(input, NewHand::new)
+}
+
+fn common<T>(input: &str, func: fn(Hand) -> T) -> impl Display
+where
+    T: Ord,
+{
+    input
+        .parse::<Game>()
+        .map(|game| game.winings(func))
+        .map(|value| value.to_string())
+        .unwrap_or_else(|err| err.to_string())
 }

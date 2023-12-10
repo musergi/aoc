@@ -1,14 +1,14 @@
 pub struct Competition {
-    time: u32,
-    record: u32,
+    time: u64,
+    record: u64,
 }
 
 impl Competition {
-    pub fn new(time: u32, record: u32) -> Competition {
+    pub fn new(time: u64, record: u64) -> Competition {
         Competition { time, record }
     }
 
-    pub fn wining_move_count(&self) -> u32 {
+    pub fn wining_move_count(&self) -> u64 {
         // let `d` be the distance
         // let `t` be the relase time
         // let `tl` be the competition time
@@ -22,7 +22,7 @@ impl Competition {
         // Intersection at
         // t^2 - tl + t + r > 0
         let discriminant = self.time * self.time - 4 * self.record;
-        let root: u32 = (discriminant as f32).sqrt() as u32;
+        let root: u64 = (discriminant as f32).sqrt() as u64;
         let negative_solution = (self.time - root) / 2;
         let positive_solution = (self.time + root) / 2;
         // Sweep a range because may not be exact square root
@@ -37,11 +37,11 @@ impl Competition {
         last_wining_num - first_wining_num + 1
     }
 
-    fn beats_record(&self, t: u32) -> bool {
+    fn beats_record(&self, t: u64) -> bool {
         self.distance(t) > self.record
     }
 
-    fn distance(&self, t: u32) -> u32 {
+    fn distance(&self, t: u64) -> u64 {
         self.time * t - t * t
     }
 }

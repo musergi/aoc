@@ -10,13 +10,17 @@ fn main() {
 }
 
 fn part1(input: &str) -> impl Display {
-    input
-        .parse::<Map>()
-        .map(|map| map.steps())
-        .map(|value| value.to_string())
-        .unwrap_or_else(|err| err.to_string())
+    common(input, |map| map.steps())
 }
 
-fn part2(_input: &str) -> impl Display {
-    0
+fn part2(input: &str) -> impl Display {
+    common(input, |map| map.steps_all())
+}
+
+fn common(input: &str, func: fn(&Map) -> usize) -> impl Display {
+    input
+        .parse::<Map>()
+        .map(|map| func(&map))
+        .map(|value| value.to_string())
+        .unwrap_or_else(|err| err.to_string())
 }

@@ -18,3 +18,6 @@ macro_rules! input {
         concat!(env!("CARGO_MANIFEST_DIR"), "/assets/input.txt")
     };
 }
+
+pub mod gcd;
+pub mod lcm;

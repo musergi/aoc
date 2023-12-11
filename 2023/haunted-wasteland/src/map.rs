@@ -1,4 +1,5 @@
 use crate::{instruction::Instruction, line::Line};
+use aoc::lcm::Lcm;
 use std::str::FromStr;
 
 pub struct Map {
@@ -8,16 +9,29 @@ pub struct Map {
 
 impl Map {
     pub fn steps(&self) -> usize {
-        let mut position = &self
-            .lines
+        self.steps_end_condition("AAA", |position| position == "ZZZ")
+    }
+
+    pub fn steps_all(&self) -> usize {
+        self.lines
             .iter()
-            .find(|line| line.source == "AAA")
+            .map(|line| &line.source)
+            .filter(|source| source.chars().last().unwrap() == 'A')
+            .map(|source| {
+                self.steps_end_condition(source, |postition| {
+                    postition.chars().last().unwrap() == 'Z'
+                })
+            })
+            .reduce(|a, b| a.lcm(b).unwrap())
             .unwrap()
-            .source;
+    }
+
+    fn steps_end_condition(&self, start: &str, condition: fn(&str) -> bool) -> usize {
+        let mut position = start;
         std::iter::repeat(self.instructions.iter())
             .flat_map(|iter| iter)
             .take_while(|instr| {
-                if position == "ZZZ" {
+                if condition(position) {
                     false
                 } else {
                     let line = self
@@ -76,5 +90,12 @@ mod tests {
         let string = include_str!("../assets/example2.txt");
         let map: Map = string.parse().unwrap();
         assert_eq!(map.steps(), 6);
+    }
+
+    #[test]
+    fn example3() {
+        let string = include_str!("../assets/example3.txt");
+        let map: Map = string.parse().unwrap();
+        assert_eq!(map.steps_all(), 6);
     }
 }

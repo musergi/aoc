@@ -11,13 +11,17 @@ fn main() {
 }
 
 fn part1(input: &str) -> impl Display {
-    input
-        .parse::<Pipes>()
-        .map(|pipes| pipes.farthest_distance())
-        .map(|value| value.to_string())
-        .unwrap_or_else(|err| err.to_string())
+    common(input, Pipes::farthest_distance)
 }
 
-fn part2(_input: &str) -> impl Display {
-    0
+fn part2(input: &str) -> impl Display {
+    common(input, Pipes::inner_tiles)
+}
+
+fn common(input: &str, func: fn(Pipes) -> usize) -> impl Display {
+    input
+        .parse::<Pipes>()
+        .map(func)
+        .map(|value| value.to_string())
+        .unwrap_or_else(|err| err.to_string())
 }

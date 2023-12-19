@@ -14,6 +14,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cosmic-expansion"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+]
+
+[[package]]
 name = "cube-conundrum"
 version = "0.1.0"
 dependencies = [

@@ -1,6 +1,8 @@
 use std::str::FromStr;
 
-#[derive(Clone)]
+use crate::counter_iter::IteratorExt;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpringRow {
     conditions: Vec<Option<SpringCondition>>,
     validation: Vec<usize>,
@@ -13,14 +15,10 @@ impl SpringRow {
     }
 
     fn inner_combinations(&mut self) -> usize {
-        if self.conditions.iter().all(|condition| condition.is_some()) {
-            if self.is_valid() {
-                1
-            } else {
-                0
-            }
-        } else {
-            self.sum_both_options()
+        match self.is_valid() {
+            Some(true) => 1,
+            Some(false) => 0,
+            None => self.sum_both_options(),
         }
     }
 
@@ -38,38 +36,43 @@ impl SpringRow {
         first + second
     }
 
-    fn is_valid(&self) -> bool {
-        let mut idx = 0;
-        let mut current_count = None;
-        for condition in self.conditions.iter() {
-            current_count = match (condition.as_ref().unwrap(), current_count) {
-                (SpringCondition::Operational, None) => None,
-                (SpringCondition::Damaged, None) => Some(1),
-                (SpringCondition::Damaged, Some(n)) => Some(n + 1),
-                (SpringCondition::Operational, Some(n)) => {
+    fn is_valid(&self) -> Option<bool> {
+        if self.conditions.iter().any(|condition| condition.is_none()) {
+            None
+        } else {
+            let mut idx = 0;
+            for (count, value) in self.conditions.iter().counts() {
+                let value = value.as_ref().unwrap();
+                if *value == SpringCondition::Damaged {
                     if let Some(expected) = self.validation.get(idx) {
-                        if *expected != n {
-                            return false;
+                        if *expected != count {
+                            return Some(false);
                         }
                         idx += 1;
                     } else {
-                        return false;
+                        return Some(false);
                     }
-                    None
                 }
             }
+            Some(idx == self.validation.len())
         }
-        if let Some(current_count) = current_count {
-            if let Some(expected) = self.validation.get(idx) {
-                if *expected != current_count {
-                    return false;
-                }
-                idx += 1;
-            } else {
-                return false;
-            }
+    }
+
+    fn simplified(&self) -> Option<Self> {
+        let strip_prefix = self.strip_prefix()?;
+        Some(Self {
+            conditions: self.conditions[strip_prefix..].iter().cloned().collect(),
+            validation: self.validation.clone(),
+        })
+    }
+
+    fn strip_prefix(&self) -> Option<usize> {
+        let mut it = self.conditions.iter().counts();
+        let first = it.next()?;
+        match first.1 {
+            Some(SpringCondition::Operational) => Some(first.0),
+            _ => None,
         }
-        idx == self.validation.len()
     }
 }
 
@@ -116,6 +119,33 @@ impl SpringCondition {
 #[cfg(test)]
 mod tests {
     use super::SpringRow;
+
+    #[test]
+    fn validation_no_missing() {
+        let row: SpringRow = ".#.###.#.###### 1,3,1,6".parse().unwrap();
+        assert!(row.is_valid().unwrap());
+    }
+
+    #[test]
+    fn validation_missing() {
+        let row: SpringRow = ".#.#?#?#?#?#?#? 1,3,1,6".parse().unwrap();
+        assert!(row.is_valid().is_none());
+    }
+
+    #[test]
+    fn example_prefix_simplification() {
+        let row: SpringRow = "..????????????? 1,1,3".parse().unwrap();
+        assert_eq!(
+            row.simplified().unwrap(),
+            "????????????? 1,1,3".parse().unwrap()
+        );
+    }
+
+    #[test]
+    fn example_hard_simplification() {
+        let row: SpringRow = "#.?.### 1,1,3".parse().unwrap();
+        assert_eq!(row.simplified().unwrap(), "?.### 1,3".parse().unwrap());
+    }
 
     #[test]
     fn example_line1() {

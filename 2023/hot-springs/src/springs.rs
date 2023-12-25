@@ -9,6 +9,11 @@ impl Springs {
     pub fn count_sum(&self) -> usize {
         self.rows.iter().map(|row| row.combinations()).sum()
     }
+
+    pub fn expanded(self) -> Self {
+        let rows = self.rows.into_iter().map(SpringRow::expand).collect();
+        Self { rows }
+    }
 }
 
 impl FromStr for Springs {

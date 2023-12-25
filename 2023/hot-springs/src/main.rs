@@ -10,13 +10,18 @@ fn main() {
 }
 
 fn part1(input: &str) -> impl Display {
+    common(input, std::convert::identity)
+}
+
+fn part2(input: &str) -> impl Display {
+    common(input, Springs::expanded)
+}
+
+fn common(input: &str, prefunc: fn(Springs) -> Springs) -> impl Display {
     input
         .parse::<Springs>()
+        .map(prefunc)
         .map(|springs| springs.count_sum())
         .map(|value| value.to_string())
         .unwrap_or_else(|err| err.to_string())
-}
-
-fn part2(_input: &str) -> impl Display {
-    0
 }

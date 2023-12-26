@@ -2,6 +2,7 @@ use springs::Springs;
 use std::fmt::Display;
 
 mod counter_iter;
+mod spring_condition;
 mod spring_row;
 mod springs;
 

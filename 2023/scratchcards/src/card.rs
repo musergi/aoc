@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 pub struct Card {
-    id: u32,
+    _id: u32,
     winning: Vec<u32>,
     contained: Vec<u32>,
 }
@@ -45,7 +45,7 @@ impl FromStr for Card {
             .collect::<Result<_, _>>()
             .map_err(|_| "invalid contained number")?;
         Ok(Card {
-            id,
+            _id: id,
             winning,
             contained,
         })
@@ -61,7 +61,7 @@ mod tests {
         let card: Card = "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53"
             .parse()
             .unwrap();
-        assert_eq!(card.id, 1);
+        assert_eq!(card._id, 1);
         assert_eq!(card.winning[0], 41);
         assert_eq!(card.winning[1], 48);
         assert_eq!(card.winning[2], 83);
@@ -82,7 +82,7 @@ mod tests {
         let card: Card = "Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19"
             .parse()
             .unwrap();
-        assert_eq!(card.id, 2);
+        assert_eq!(card._id, 2);
         assert_eq!(card.winning[0], 13);
         assert_eq!(card.winning[1], 32);
         assert_eq!(card.winning[2], 20);
@@ -103,7 +103,7 @@ mod tests {
         let card: Card = "Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1"
             .parse()
             .unwrap();
-        assert_eq!(card.id, 3);
+        assert_eq!(card._id, 3);
         assert_eq!(card.winning[0], 1);
         assert_eq!(card.winning[1], 21);
         assert_eq!(card.winning[2], 53);
@@ -124,7 +124,7 @@ mod tests {
         let card: Card = "Card 4: 41 92 73 84 69 | 59 84 76 51 58  5 54 83"
             .parse()
             .unwrap();
-        assert_eq!(card.id, 4);
+        assert_eq!(card._id, 4);
         assert_eq!(card.winning[0], 41);
         assert_eq!(card.winning[1], 92);
         assert_eq!(card.winning[2], 73);
@@ -145,7 +145,7 @@ mod tests {
         let card: Card = "Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36"
             .parse()
             .unwrap();
-        assert_eq!(card.id, 5);
+        assert_eq!(card._id, 5);
         assert_eq!(card.winning[0], 87);
         assert_eq!(card.winning[1], 83);
         assert_eq!(card.winning[2], 26);
@@ -166,7 +166,7 @@ mod tests {
         let card: Card = "Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11"
             .parse()
             .unwrap();
-        assert_eq!(card.id, 6);
+        assert_eq!(card._id, 6);
         assert_eq!(card.winning[0], 31);
         assert_eq!(card.winning[1], 18);
         assert_eq!(card.winning[2], 13);

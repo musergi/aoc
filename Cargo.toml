@@ -22,9 +22,9 @@ members = [
   "2023/pipe-maze",
   "2023/cosmic-expansion",
   "2023/hot-springs",
+  "2023/point-of-incidence",
 ]
 
 
 [workspace.dependencies]
-
 aoc = { path = "aoc" }

@@ -98,6 +98,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "point-of-incidence"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+]
+
+[[package]]
 name = "problably-a-fire-hazard"
 version = "0.1.0"
 dependencies = [

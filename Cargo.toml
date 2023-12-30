@@ -24,6 +24,7 @@ members = [
   "2023/hot-springs",
   "2023/point-of-incidence",
   "2023/parabolic-reflector-dish",
+  "2023/lens-library",
 ]
 
 

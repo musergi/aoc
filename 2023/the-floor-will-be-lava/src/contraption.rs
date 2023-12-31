@@ -7,9 +7,25 @@ pub struct Contraption {
 
 impl Contraption {
     pub fn energized(&self) -> usize {
+        self.energized_from((0, 0), Direction::East)
+    }
+
+    pub fn max_energized(&self) -> usize {
+        let row_count = self.tiles.len() / self.columns;
+        (0..row_count)
+            .map(|row| ((row, 0), Direction::East))
+            .chain((0..row_count).map(|row| ((row, self.columns - 1), Direction::West)))
+            .chain((0..self.columns).map(|column| ((0, column), Direction::South)))
+            .chain((0..self.columns).map(|column| ((row_count - 1, column), Direction::North)))
+            .map(|(position, direction)| self.energized_from(position, direction))
+            .max()
+            .unwrap()
+    }
+
+    fn energized_from(&self, position: (usize, usize), direction: Direction) -> usize {
         let mut visited = HashSet::new();
         let mut stack = Vec::new();
-        stack.push(((0, 0), Direction::East));
+        stack.push((position, direction));
         while let Some((position, direction)) = stack.pop() {
             visited.insert((position, direction));
             let index = position.0 * self.columns + position.1;
@@ -139,5 +155,12 @@ mod tests {
         let string = include_str!("../assets/example.txt");
         let contraption: Contraption = string.parse().unwrap();
         assert_eq!(contraption.energized(), 46);
+    }
+
+    #[test]
+    fn max_energized() {
+        let string = include_str!("../assets/example.txt");
+        let contraption: Contraption = string.parse().unwrap();
+        assert_eq!(contraption.max_energized(), 51);
     }
 }

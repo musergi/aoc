@@ -1,0 +1,196 @@
+
+running 1 test
+test contraption::tests::enegized ... FAILED
+
+failures:
+
+---- contraption::tests::enegized stdout ----
+[2023/the-floor-will-be-lava/src/contraption.rs:17] current_tile = EmptySpace
+[2023/the-floor-will-be-lava/src/contraption.rs:27] &stack = [
+    (
+        (
+            0,
+            1,
+        ),
+        East,
+    ),
+]
+[2023/the-floor-will-be-lava/src/contraption.rs:17] current_tile = Vertical
+[2023/the-floor-will-be-lava/src/contraption.rs:27] &stack = [
+    (
+        (
+            1,
+            1,
+        ),
+        South,
+    ),
+]
+[2023/the-floor-will-be-lava/src/contraption.rs:17] current_tile = EmptySpace
+[2023/the-floor-will-be-lava/src/contraption.rs:27] &stack = [
+    (
+        (
+            2,
+            1,
+        ),
+        South,
+    ),
+]
+[2023/the-floor-will-be-lava/src/contraption.rs:17] current_tile = EmptySpace
+[2023/the-floor-will-be-lava/src/contraption.rs:27] &stack = [
+    (
+        (
+            3,
+            1,
+        ),
+        South,
+    ),
+]
+[2023/the-floor-will-be-lava/src/contraption.rs:17] current_tile = EmptySpace
+[2023/the-floor-will-be-lava/src/contraption.rs:27] &stack = [
+    (
+        (
+            4,
+            1,
+        ),
+        South,
+    ),
+]
+[2023/the-floor-will-be-lava/src/contraption.rs:17] current_tile = EmptySpace
+[2023/the-floor-will-be-lava/src/contraption.rs:27] &stack = [
+    (
+        (
+            5,
+            1,
+        ),
+        South,
+    ),
+]
+[2023/the-floor-will-be-lava/src/contraption.rs:17] current_tile = EmptySpace
+[2023/the-floor-will-be-lava/src/contraption.rs:27] &stack = [
+    (
+        (
+            6,
+            1,
+        ),
+        South,
+    ),
+]
+[2023/the-floor-will-be-lava/src/contraption.rs:17] current_tile = EmptySpace
+[2023/the-floor-will-be-lava/src/contraption.rs:27] &stack = [
+    (
+        (
+            7,
+            1,
+        ),
+        South,
+    ),
+]
+[2023/the-floor-will-be-lava/src/contraption.rs:17] current_tile = Horizontal
+[2023/the-floor-will-be-lava/src/contraption.rs:27] &stack = [
+    (
+        (
+            7,
+            0,
+        ),
+        West,
+    ),
+    (
+        (
+            7,
+            2,
+        ),
+        East,
+    ),
+]
+[2023/the-floor-will-be-lava/src/contraption.rs:17] current_tile = EmptySpace
+[2023/the-floor-will-be-lava/src/contraption.rs:27] &stack = [
+    (
+        (
+            7,
+            0,
+        ),
+        West,
+    ),
+    (
+        (
+            7,
+            3,
+        ),
+        East,
+    ),
+]
+[2023/the-floor-will-be-lava/src/contraption.rs:17] current_tile = Horizontal
+[2023/the-floor-will-be-lava/src/contraption.rs:27] &stack = [
+    (
+        (
+            7,
+            0,
+        ),
+        West,
+    ),
+    (
+        (
+            7,
+            4,
+        ),
+        East,
+    ),
+]
+[2023/the-floor-will-be-lava/src/contraption.rs:17] current_tile = DiagonalEast
+[2023/the-floor-will-be-lava/src/contraption.rs:27] &stack = [
+    (
+        (
+            7,
+            0,
+        ),
+        West,
+    ),
+    (
+        (
+            8,
+            4,
+        ),
+        South,
+    ),
+]
+[2023/the-floor-will-be-lava/src/contraption.rs:17] current_tile = EmptySpace
+[2023/the-floor-will-be-lava/src/contraption.rs:27] &stack = [
+    (
+        (
+            7,
+            0,
+        ),
+        West,
+    ),
+    (
+        (
+            9,
+            4,
+        ),
+        South,
+    ),
+]
+[2023/the-floor-will-be-lava/src/contraption.rs:17] current_tile = EmptySpace
+[2023/the-floor-will-be-lava/src/contraption.rs:27] &stack = [
+    (
+        (
+            7,
+            0,
+        ),
+        West,
+    ),
+]
+[2023/the-floor-will-be-lava/src/contraption.rs:17] current_tile = EmptySpace
+[2023/the-floor-will-be-lava/src/contraption.rs:27] &stack = []
+thread 'contraption::tests::enegized' panicked at 2023/the-floor-will-be-lava/src/contraption.rs:136:9:
+assertion `left == right` failed
+  left: 15
+ right: 46
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    contraption::tests::enegized
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

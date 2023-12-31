@@ -140,6 +140,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "the-floor-will-be-lava"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+]
+
+[[package]]
 name = "the-ideal-stocking-stuffer"
 version = "0.1.0"
 dependencies = [

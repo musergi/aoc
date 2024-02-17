@@ -77,6 +77,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "lavaduct-lagoon"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+]
+
+[[package]]
 name = "lens-library"
 version = "0.1.0"
 dependencies = [

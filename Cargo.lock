@@ -7,6 +7,13 @@ name = "aoc"
 version = "0.1.0"
 
 [[package]]
+name = "aplenty"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+]
+
+[[package]]
 name = "camel-cards"
 version = "0.1.0"
 dependencies = [

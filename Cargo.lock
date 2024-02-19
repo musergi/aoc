@@ -147,6 +147,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "pulse-propagation"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+]
+
+[[package]]
 name = "scratchcards"
 version = "0.1.0"
 dependencies = [

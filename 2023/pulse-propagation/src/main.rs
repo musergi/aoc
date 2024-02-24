@@ -13,13 +13,17 @@ fn main() {
 }
 
 fn part1(input: &str) -> impl Display {
-    input
-        .parse::<Puzzle>()
-        .map(|puzzle| puzzle.part1())
-        .map(|v| v.to_string())
-        .unwrap_or_else(|err| err.to_string())
+    common(input, Puzzle::part1)
 }
 
 fn part2(input: &str) -> impl Display {
-    0
+    common(input, Puzzle::part2)
+}
+
+fn common(input: &str, func: fn(Puzzle) -> usize) -> impl Display {
+    input
+        .parse::<Puzzle>()
+        .map(func)
+        .map(|v| v.to_string())
+        .unwrap_or_else(|err| err.to_string())
 }

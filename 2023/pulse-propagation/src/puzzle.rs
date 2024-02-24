@@ -40,6 +40,72 @@ impl Puzzle {
         }
         low_signal * high_signal
     }
+
+    pub fn part2(mut self) -> usize {
+        let mut messages = VecDeque::new();
+        let mut presses = 0;
+        let conjuction = self
+            .modules
+            .iter()
+            .find_map(|(name, module)| match module {
+                Module::Conjunction { target, .. } => {
+                    if target.contains(&"rx".to_string()) {
+                        Some(name.to_string())
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            })
+            .unwrap();
+        let preconjunction: Vec<_> = self
+            .modules
+            .iter()
+            .filter_map(|(name, module)| match module {
+                Module::FlipFlop { target, .. } => {
+                    if target.contains(&conjuction) {
+                        Some(name.to_string())
+                    } else {
+                        None
+                    }
+                }
+                Module::Conjunction { target, .. } => {
+                    if target.contains(&conjuction) {
+                        Some(name.to_string())
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            })
+            .collect();
+        let mut cycle_sizes: HashMap<_, usize> =
+            preconjunction.into_iter().map(|name| (name, 0)).collect();
+        while cycle_sizes.iter().any(|(_, size)| *size == 0) {
+            messages.push_front(("button".to_string(), "broadcaster".to_string(), Signal::Low));
+            presses += 1;
+            while let Some((from, target, signal)) = messages.pop_front() {
+                if let Some(cycle) = cycle_sizes.get_mut(&from) {
+                    if *cycle == 0 && signal == Signal::High {
+                        *cycle = presses;
+                    }
+                }
+                if let Some(module) = self.modules.get_mut(&target) {
+                    let signals = module.process(&from, signal);
+                    messages.extend(
+                        signals
+                            .into_iter()
+                            .map(|(output, signal)| (target.clone(), output, signal))
+                            .collect::<Vec<_>>(),
+                    );
+                }
+            }
+        }
+        cycle_sizes
+            .into_iter()
+            .map(|(_, size)| size)
+            .fold(1, |a, b| a * b)
+    }
 }
 
 impl std::str::FromStr for Puzzle {

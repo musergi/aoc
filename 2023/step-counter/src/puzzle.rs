@@ -1,14 +1,40 @@
-use std::{collections::HashSet, usize};
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    usize,
+};
 
 pub struct Puzzle {
     start: (i64, i64),
     garden: HashSet<(i64, i64)>,
+    rows: i64,
+    columns: i64,
 }
 
 const PART1_STEPS: usize = 64;
 const PART2_STEPS: usize = 26501365;
 
 impl Puzzle {
+    fn new(start: (i64, i64), garden: HashSet<(i64, i64)>) -> Result<Puzzle, &'static str> {
+        let rows = garden
+            .iter()
+            .map(|position| position.0)
+            .max()
+            .ok_or("empty garden")?
+            + 1;
+        let columns = garden
+            .iter()
+            .map(|position| position.1)
+            .max()
+            .ok_or("empty garden")?
+            + 1;
+        Ok(Puzzle {
+            start,
+            garden,
+            rows,
+            columns,
+        })
+    }
+
     pub fn part1(self) -> usize {
         self.reachable(PART1_STEPS)
     }
@@ -29,33 +55,43 @@ impl Puzzle {
     where
         F: Fn(&(i64, i64)) -> bool,
     {
-        let mut positions = HashSet::new();
-        positions.insert(self.start.clone());
-        for _ in 0..steps {
-            let mut new_positions = HashSet::new();
-            for position in positions.iter() {
-                let (row, column) = position;
-                new_positions.extend(
-                    [
-                        (row + 1, *column),
-                        (row - 1, *column),
-                        (*row, column + 1),
-                        (*row, column - 1),
-                    ]
-                    .into_iter()
-                    .filter(|p| func(p)),
-                );
+        let mut queue = VecDeque::new();
+        queue.push_back(self.start.clone());
+        let mut shortest_distance = HashMap::new();
+        shortest_distance.insert(self.start.clone(), 0);
+
+        while let Some(position) = queue.pop_front() {
+            let new_distance = shortest_distance.get(&position).unwrap() + 1;
+            let (row, column) = position;
+            for adjacent_position in [
+                (row + 1, column),
+                (row - 1, column),
+                (row, column + 1),
+                (row, column - 1),
+            ] {
+                if func(&adjacent_position)
+                    && shortest_distance
+                        .get(&adjacent_position)
+                        .map(|&old_distance| new_distance < old_distance)
+                        .unwrap_or(true)
+                    && new_distance <= steps
+                {
+                    shortest_distance.insert(adjacent_position, new_distance);
+                    queue.push_back(adjacent_position)
+                }
             }
-            positions = new_positions;
         }
-        positions.len()
+        let parity = steps % 2;
+        shortest_distance
+            .values()
+            .into_iter()
+            .filter(|&distance| distance % 2 == parity)
+            .count()
     }
 
     fn contains_wrapped(&self, position: &(i64, i64)) -> bool {
-        let height = self.garden.iter().map(|position| position.0).max().unwrap() + 1;
-        let width = self.garden.iter().map(|position| position.1).max().unwrap() + 1;
-        let x = position.0.rem_euclid(height);
-        let y = position.1.rem_euclid(width);
+        let x = position.0.rem_euclid(self.rows);
+        let y = position.1.rem_euclid(self.columns);
         self.garden.contains(&(x, y))
     }
 }
@@ -81,7 +117,7 @@ impl std::str::FromStr for Puzzle {
             }
         }
         let start = start.ok_or("start not found")?;
-        Ok(Puzzle { start, garden })
+        Puzzle::new(start, garden)
     }
 }
 
@@ -176,14 +212,12 @@ mod tests {
             assert_eq!(puzzle.reachable_wrapped(100), 6536);
         }
 
-        #[ignore = "slow"]
         #[test]
         fn example5() {
             let puzzle: Puzzle = EXAMPLE.parse().unwrap();
             assert_eq!(puzzle.reachable_wrapped(500), 167004);
         }
 
-        #[ignore = "slow"]
         #[test]
         fn example6() {
             let puzzle: Puzzle = EXAMPLE.parse().unwrap();

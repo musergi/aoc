@@ -63,21 +63,24 @@ impl Puzzle {
         while let Some(position) = queue.pop_front() {
             let new_distance = shortest_distance.get(&position).unwrap() + 1;
             let (row, column) = position;
-            for adjacent_position in [
-                (row + 1, column),
-                (row - 1, column),
-                (row, column + 1),
-                (row, column - 1),
-            ] {
-                if func(&adjacent_position)
-                    && shortest_distance
+            if new_distance <= steps {
+                for adjacent_position in [
+                    (row + 1, column),
+                    (row - 1, column),
+                    (row, column + 1),
+                    (row, column - 1),
+                ]
+                .into_iter()
+                .filter(&func)
+                {
+                    if shortest_distance
                         .get(&adjacent_position)
                         .map(|&old_distance| new_distance < old_distance)
                         .unwrap_or(true)
-                    && new_distance <= steps
-                {
-                    shortest_distance.insert(adjacent_position, new_distance);
-                    queue.push_back(adjacent_position)
+                    {
+                        shortest_distance.insert(adjacent_position, new_distance);
+                        queue.push_back(adjacent_position)
+                    }
                 }
             }
         }

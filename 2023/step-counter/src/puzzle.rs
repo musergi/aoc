@@ -50,10 +50,6 @@ impl Puzzle {
         self.filtered_reachable(steps, |p| self.garden.contains(p))
     }
 
-    fn reachable_wrapped(&self, steps: usize) -> usize {
-        self.filtered_reachable(steps, |p| self.contains_wrapped(p))
-    }
-
     fn fast_reachable(&self, steps: usize) -> usize {
         let unstable_area = 4;
         let distances = self.distances(usize::MAX, |position| {
@@ -369,91 +365,43 @@ mod tests {
         #[test]
         fn example1() {
             let puzzle: Puzzle = EXAMPLE.parse().unwrap();
-            assert_eq!(puzzle.reachable_wrapped(6), 16);
+            assert_eq!(puzzle.fast_reachable(6), 16);
         }
 
         #[test]
         fn example2() {
             let puzzle: Puzzle = EXAMPLE.parse().unwrap();
-            assert_eq!(puzzle.reachable_wrapped(10), 50);
+            assert_eq!(puzzle.fast_reachable(10), 50);
         }
 
         #[test]
         fn example3() {
             let puzzle: Puzzle = EXAMPLE.parse().unwrap();
-            assert_eq!(puzzle.reachable_wrapped(50), 1594);
+            assert_eq!(puzzle.fast_reachable(50), 1594);
         }
 
         #[test]
         fn example4() {
             let puzzle: Puzzle = EXAMPLE.parse().unwrap();
-            assert_eq!(puzzle.reachable_wrapped(100), 6536);
+            assert_eq!(puzzle.fast_reachable(100), 6536);
         }
 
         #[test]
         fn example5() {
             let puzzle: Puzzle = EXAMPLE.parse().unwrap();
-            assert_eq!(puzzle.reachable_wrapped(500), 167004);
+            assert_eq!(puzzle.fast_reachable(500), 167004);
         }
 
-        #[ignore = "slow"]
         #[test]
         fn example6() {
             let puzzle: Puzzle = EXAMPLE.parse().unwrap();
-            assert_eq!(puzzle.reachable_wrapped(1000), 668697);
+            assert_eq!(puzzle.fast_reachable(1000), 668697);
         }
 
-        #[ignore = "slow"]
         #[test]
         fn example7() {
             let puzzle: Puzzle = EXAMPLE.parse().unwrap();
-            assert_eq!(puzzle.reachable_wrapped(5000), 16733044);
-        }
-
-        mod fast {
-            use super::*;
-
-            #[test]
-            fn example1() {
-                let puzzle: Puzzle = EXAMPLE.parse().unwrap();
-                assert_eq!(puzzle.fast_reachable(6), 16);
-            }
-
-            #[test]
-            fn example2() {
-                let puzzle: Puzzle = EXAMPLE.parse().unwrap();
-                assert_eq!(puzzle.fast_reachable(10), 50);
-            }
-
-            #[test]
-            fn example3() {
-                let puzzle: Puzzle = EXAMPLE.parse().unwrap();
-                assert_eq!(puzzle.fast_reachable(50), 1594);
-            }
-
-            #[test]
-            fn example4() {
-                let puzzle: Puzzle = EXAMPLE.parse().unwrap();
-                assert_eq!(puzzle.fast_reachable(100), 6536);
-            }
-
-            #[test]
-            fn example5() {
-                let puzzle: Puzzle = EXAMPLE.parse().unwrap();
-                assert_eq!(puzzle.fast_reachable(500), 167004);
-            }
-
-            #[test]
-            fn example6() {
-                let puzzle: Puzzle = EXAMPLE.parse().unwrap();
-                assert_eq!(puzzle.fast_reachable(1000), 668697);
-            }
-
-            #[test]
-            fn example7() {
-                let puzzle: Puzzle = EXAMPLE.parse().unwrap();
-                assert_eq!(puzzle.fast_reachable(5000), 16733044);
-            }
+            assert_eq!(puzzle.fast_reachable(5000), 16733044);
         }
     }
 }

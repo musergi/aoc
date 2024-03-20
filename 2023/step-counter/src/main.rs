@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use puzzle::Puzzle;
 
+mod disance_iter;
 mod puzzle;
 
 fn main() {

@@ -1,4 +1,3 @@
-use core::panic;
 use std::{
     collections::{HashMap, HashSet, VecDeque},
     i64, usize,
@@ -124,23 +123,28 @@ impl Puzzle {
             let chunk_parity = distance % 2;
             for mut chunk in DistanceIter::from(distance) {
                 let mut delta = 0;
-                while chunked_distances.get(&chunk).is_none() {
+
+                if !chunked_distances.contains_key(&chunk) {
                     if chunk.0 < -1 {
-                        chunk.0 += 1;
-                        delta += offset;
+                        if chunk.1.abs() >= unstable_area {
+                            chunk = (-1, (unstable_area - 1) * chunk.1.signum());
+                        } else {
+                            chunk.0 += distance - unstable_area;
+                        }
+                        delta += offset * (distance - unstable_area) as usize;
                     } else if chunk.0 > 1 {
-                        chunk.0 -= 1;
-                        delta += offset;
-                    } else if chunk.1 < -1 {
-                        chunk.1 += 1;
-                        delta += offset;
-                    } else if chunk.1 > 1 {
-                        chunk.1 -= 1;
-                        delta += offset;
+                        if chunk.1.abs() >= unstable_area {
+                            chunk = (1, (unstable_area - 1) * chunk.1.signum());
+                        } else {
+                            chunk.0 -= distance - unstable_area;
+                        }
+                        delta += offset * (distance - unstable_area) as usize;
                     } else {
-                        panic!("invalid state");
+                        chunk.1 -= chunk.1.signum() * (distance - unstable_area);
+                        delta += offset * (distance - unstable_area) as usize;
                     }
                 }
+
                 let distances = chunked_distances.get(&chunk).unwrap();
                 let chunk_max = chunk_maxs.get(&chunk).unwrap();
                 if delta + chunk_max <= steps {

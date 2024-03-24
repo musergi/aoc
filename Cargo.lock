@@ -3,6 +3,13 @@
 version = 3
 
 [[package]]
+name = "a-long-walk"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+]
+
+[[package]]
 name = "aoc"
 version = "0.1.0"
 
@@ -105,6 +112,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "never-tell-me-the-odds"
+version = "0.1.0"
+
+[[package]]
 name = "not-quite-lisp"
 version = "0.1.0"
 dependencies = [
@@ -152,6 +163,10 @@ version = "0.1.0"
 dependencies = [
  "aoc",
 ]
+
+[[package]]
+name = "sand-slabs"
+version = "0.1.0"
 
 [[package]]
 name = "scratchcards"

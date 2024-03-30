@@ -1,4 +1,4 @@
-use crate::{ice::Ice, position::Position};
+use crate::{generator::PathGenerator, graph::Graph, ice::Ice, path::Path, position::Position};
 use std::{
     collections::{HashMap, HashSet},
     str::FromStr,
@@ -13,57 +13,200 @@ pub struct Puzzle {
 
 impl Puzzle {
     pub fn part1(self) -> usize {
-        self.paths()
+        let graph = self.graph(|puzzle, path, position| puzzle.part1_filter(path, position));
+        GraphPathGenerator { graph: &graph }
+            .paths()
             .into_iter()
-            .map(|path| path.len() - 1)
+            .map(|path| {
+                path.distance(|a, b| {
+                    graph
+                        .edges(a)
+                        .find(|edge| edge.destination == b)
+                        .unwrap()
+                        .distance
+                })
+            })
             .max()
             .unwrap_or(0)
     }
 
-    fn paths(&self) -> Vec<Vec<Position>> {
-        let mut open_paths = Vec::new();
-        let mut closed_paths = Vec::new();
-        open_paths.push(vec![self.start.clone()]);
-        while let Some(open_path) = open_paths.pop() {
-            let last_position = open_path.last().unwrap();
-            for next_step in Ice::all()
-                .map(|ice| ice.delta())
-                .map(|delta| *last_position + delta)
-                .into_iter()
-                .filter_map(|new| self.next_path(&open_path, new))
-            {
-                let (paths, new) = match next_step {
-                    NextStep::Closed(new) => (&mut closed_paths, new),
-                    NextStep::Open(new) => (&mut open_paths, new),
-                };
-                let mut open_path = open_path.clone();
-                open_path.push(new);
-                paths.push(open_path);
-            }
-        }
-        closed_paths
+    pub fn part2(self) -> usize {
+        let graph = self.graph(|puzzle, path, position| puzzle.part2_filter(path, position));
+        GraphPathGenerator { graph: &graph }
+            .paths()
+            .into_iter()
+            .map(|path| {
+                path.distance(|a, b| {
+                    graph
+                        .edges(a)
+                        .find(|edge| edge.destination == b)
+                        .unwrap()
+                        .distance
+                })
+            })
+            .max()
+            .unwrap_or(0)
     }
 
-    fn next_path(&self, path: &[Position], new: Position) -> Option<NextStep> {
-        if new == self.end {
-            Some(NextStep::Closed(new))
-        } else if !path.contains(&new)
-            && self.valid(&new)
-            && self
-                .ice
-                .get(&new)
-                .map(|ice| ice.delta())
-                .map(|delta| new - *path.last().unwrap() == delta)
-                .unwrap_or(true)
-        {
-            Some(NextStep::Open(new))
-        } else {
-            None
-        }
+    pub fn graph<F>(&self, filter: F) -> Graph
+    where
+        F: Fn(&Puzzle, &Path<Position>, &Position) -> bool + Copy,
+    {
+        let mut nodes = vec![self.start.clone(), self.end.clone()];
+        nodes.extend(
+            self.open
+                .iter()
+                .chain(self.ice.keys())
+                .cloned()
+                .filter(|position| {
+                    Ice::all()
+                        .map(|ice| ice.delta())
+                        .map(|delta| *position + delta)
+                        .into_iter()
+                        .filter(|position| self.valid(position))
+                        .count()
+                        > 2
+                }),
+        );
+        let edges = nodes
+            .iter()
+            .enumerate()
+            .map(|(source_idx, node)| {
+                (
+                    source_idx,
+                    NodePaths {
+                        node: *node,
+                        filter,
+                        puzzle: self,
+                        nodes: &nodes,
+                    }
+                    .paths()
+                    .into_iter()
+                    .map(|path| {
+                        (
+                            nodes.iter().position(|node| node == &path.tail()).unwrap(),
+                            path.len(),
+                        )
+                    })
+                    .collect(),
+                )
+            })
+            .collect();
+        Graph { nodes, edges }
+    }
+
+    fn part1_filter(&self, path: &Path<Position>, position: &Position) -> bool {
+        self.valid(position) && !path.contains(&position) && !self.is_climbing_ice(path, position)
+    }
+
+    fn part2_filter(&self, path: &Path<Position>, position: &Position) -> bool {
+        self.valid(position) && !path.contains(&position)
     }
 
     fn valid(&self, position: &Position) -> bool {
         self.open.contains(position) || self.ice.contains_key(position)
+    }
+
+    fn is_climbing_ice(&self, path: &Path<Position>, position: &Position) -> bool {
+        self.ice
+            .get(position)
+            .map(|ice| ice.delta())
+            .map(|delta| delta != *position - path.tail())
+            .unwrap_or(false)
+    }
+}
+
+struct Part2PathGenerator {
+    puzzle: Puzzle,
+}
+
+impl PathGenerator for Part2PathGenerator {
+    type Item = Position;
+
+    fn start(&self) -> Self::Item {
+        self.puzzle.start
+    }
+
+    fn next(&self, path: &Path<Self::Item>) -> Vec<Self::Item> {
+        Ice::all()
+            .map(|ice| ice.delta())
+            .map(|delta| path.tail() + delta)
+            .into_iter()
+            .filter(|new| self.puzzle.part2_filter(&path, new))
+            .collect()
+    }
+
+    fn close(&self, next: &Self::Item) -> bool {
+        next == &self.puzzle.end
+    }
+}
+
+struct GraphPathGenerator<'a> {
+    graph: &'a Graph,
+}
+
+impl PathGenerator for GraphPathGenerator<'_> {
+    type Item = usize;
+
+    fn start(&self) -> Self::Item {
+        0
+    }
+
+    fn next(&self, path: &Path<Self::Item>) -> Vec<Self::Item> {
+        self.graph
+            .edges(path.tail())
+            .map(|edge| edge.destination)
+            .filter(|destination| !path.contains(destination))
+            .collect()
+    }
+
+    fn close(&self, next: &Self::Item) -> bool {
+        *next == 1
+    }
+}
+
+trait PositionPathFilter {
+    fn filter(&self, path: &Path<Position>, new: &Position) -> bool;
+}
+
+struct Part1<'a> {
+    puzzle: &'a Puzzle,
+}
+
+impl<'a> PositionPathFilter for Part1<'a> {
+    fn filter(&self, path: &Path<Position>, new: &Position) -> bool {
+        self.puzzle.part1_filter(path, new)
+    }
+}
+
+struct NodePaths<'a, F> {
+    node: Position,
+    filter: F,
+    puzzle: &'a Puzzle,
+    nodes: &'a [Position],
+}
+
+impl<F> PathGenerator for NodePaths<'_, F>
+where
+    F: Fn(&Puzzle, &Path<Position>, &Position) -> bool,
+{
+    type Item = Position;
+
+    fn start(&self) -> Self::Item {
+        self.node
+    }
+
+    fn next(&self, path: &Path<Self::Item>) -> Vec<Self::Item> {
+        Ice::all()
+            .map(|ice| ice.delta())
+            .map(|delta| path.tail() + delta)
+            .into_iter()
+            .filter(|new| (self.filter)(self.puzzle, &path, new))
+            .collect()
+    }
+
+    fn close(&self, next: &Self::Item) -> bool {
+        self.nodes.contains(next)
     }
 }
 
@@ -108,11 +251,6 @@ impl FromStr for Puzzle {
             end,
         })
     }
-}
-
-enum NextStep {
-    Open(Position),
-    Closed(Position),
 }
 
 #[cfg(test)]
@@ -167,15 +305,14 @@ mod tests {
     }
 
     #[test]
-    fn only_can_fall_solution_part1() {
-        let s = "#.##\n#..#\n##^#\n##.#";
-        let puzzle: Puzzle = s.parse().unwrap();
-        assert_eq!(puzzle.paths().len(), 0);
-    }
-
-    #[test]
     fn example_part1() {
         let puzzle: Puzzle = EXAMPLE.parse().unwrap();
         assert_eq!(puzzle.part1(), 94);
+    }
+
+    #[test]
+    fn example_part2() {
+        let puzzle: Puzzle = EXAMPLE.parse().unwrap();
+        assert_eq!(puzzle.part2(), 154);
     }
 }

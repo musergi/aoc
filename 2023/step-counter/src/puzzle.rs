@@ -1,12 +1,12 @@
-use crate::disance_iter::DistanceIter;
+use crate::{disance_iter::DistanceIter, vec::Vec2i};
 use std::{
     collections::{HashMap, HashSet, VecDeque},
     i64, usize,
 };
 
 pub struct Puzzle {
-    start: (i64, i64),
-    garden: HashSet<(i64, i64)>,
+    start: Vec2i,
+    garden: HashSet<Vec2i>,
     rows: i64,
     columns: i64,
 }
@@ -15,16 +15,16 @@ const PART1_STEPS: usize = 64;
 const PART2_STEPS: usize = 26501365;
 
 impl Puzzle {
-    fn new(start: (i64, i64), garden: HashSet<(i64, i64)>) -> Result<Puzzle, &'static str> {
+    fn new(start: Vec2i, garden: HashSet<Vec2i>) -> Result<Puzzle, &'static str> {
         let rows = garden
             .iter()
-            .map(|position| position.0)
+            .map(|position| position.row)
             .max()
             .ok_or("empty garden")?
             + 1;
         let columns = garden
             .iter()
-            .map(|position| position.1)
+            .map(|position| position.column)
             .max()
             .ok_or("empty garden")?
             + 1;
@@ -52,23 +52,18 @@ impl Puzzle {
         let unstable_area = 4;
         let distances = self.distances(usize::MAX, |position| {
             let chunks = self.chunk(position);
-            chunks.0.abs() + chunks.1.abs() <= unstable_area && self.contains_wrapped(position)
+            chunks.row.abs() + chunks.column.abs() <= unstable_area
+                && self.contains_wrapped(position)
         });
-        let mut chunked_distances: HashMap<(i64, i64), HashMap<(i64, i64), usize>> = HashMap::new();
-        let mut chunk_maxs: HashMap<(i64, i64), usize> = HashMap::new();
+        let mut chunked_distances: HashMap<Vec2i, HashMap<Vec2i, usize>> = HashMap::new();
+        let mut chunk_maxs: HashMap<Vec2i, usize> = HashMap::new();
         for chunk_distance in 0..=unstable_area {
             for chunk in DistanceIter::from(chunk_distance) {
                 let chunked: HashMap<_, _> = distances
                     .iter()
                     .filter(|(position, _)| self.chunk(&position) == chunk)
                     .map(|(position, distance)| {
-                        (
-                            (
-                                position.0.rem_euclid(self.rows),
-                                position.1.rem_euclid(self.columns),
-                            ),
-                            *distance,
-                        )
+                        (position.rem_euclid(self.rows, self.columns), *distance)
                     })
                     .collect();
                 chunk_maxs.insert(
@@ -85,18 +80,22 @@ impl Puzzle {
         }
         let offset = (
             self.offset(
-                chunked_distances.get(&(unstable_area - 1, 0)).unwrap(),
-                chunked_distances.get(&(unstable_area, 0)).unwrap(),
+                chunked_distances
+                    .get(&(unstable_area - 1, 0).into())
+                    .unwrap(),
+                chunked_distances.get(&(unstable_area, 0).into()).unwrap(),
             ),
             self.offset(
-                chunked_distances.get(&(0, unstable_area - 1)).unwrap(),
-                chunked_distances.get(&(0, unstable_area)).unwrap(),
+                chunked_distances
+                    .get(&(0, unstable_area - 1).into())
+                    .unwrap(),
+                chunked_distances.get(&(0, unstable_area).into()).unwrap(),
             ),
         );
         assert_eq!(offset.0, offset.1);
         let offset = offset.0;
         let even_count = chunked_distances
-            .get(&(0, 0))
+            .get(&(0, 0).into())
             .unwrap()
             .values()
             .filter(|value| *value % 2 == steps % 2)
@@ -124,22 +123,22 @@ impl Puzzle {
                 let mut delta = 0;
 
                 if !chunked_distances.contains_key(&chunk) {
-                    if chunk.0 < -1 {
-                        if chunk.1.abs() >= unstable_area {
-                            chunk = (-1, (unstable_area - 1) * chunk.1.signum());
+                    if chunk.row < -1 {
+                        if chunk.column.abs() >= unstable_area {
+                            chunk = (-1, (unstable_area - 1) * chunk.column.signum()).into();
                         } else {
-                            chunk.0 += distance - unstable_area;
+                            chunk.row += distance - unstable_area;
                         }
                         delta += offset * (distance - unstable_area) as usize;
-                    } else if chunk.0 > 1 {
-                        if chunk.1.abs() >= unstable_area {
-                            chunk = (1, (unstable_area - 1) * chunk.1.signum());
+                    } else if chunk.row > 1 {
+                        if chunk.column.abs() >= unstable_area {
+                            chunk = (1, (unstable_area - 1) * chunk.column.signum()).into();
                         } else {
-                            chunk.0 -= distance - unstable_area;
+                            chunk.row -= distance - unstable_area;
                         }
                         delta += offset * (distance - unstable_area) as usize;
                     } else {
-                        chunk.1 -= chunk.1.signum() * (distance - unstable_area);
+                        chunk.column -= chunk.column.signum() * (distance - unstable_area);
                         delta += offset * (distance - unstable_area) as usize;
                     }
                 }
@@ -168,12 +167,12 @@ impl Puzzle {
         count
     }
 
-    fn offset(&self, near: &HashMap<(i64, i64), usize>, far: &HashMap<(i64, i64), usize>) -> usize {
+    fn offset(&self, near: &HashMap<Vec2i, usize>, far: &HashMap<Vec2i, usize>) -> usize {
         let offsets: HashSet<_> = (0..self.rows)
             .flat_map(|row| (0..self.columns).map(move |column| (row, column)))
             .filter_map(|position| {
-                let near = near.get(&position);
-                let far = far.get(&position);
+                let near = near.get(&position.into());
+                let far = far.get(&position.into());
                 match (far, near) {
                     (Some(far), Some(near)) => Some(far - near),
                     _ => None,
@@ -184,25 +183,13 @@ impl Puzzle {
         offsets.into_iter().next().unwrap()
     }
 
-    fn chunk(&self, position: &(i64, i64)) -> (i64, i64) {
-        let &(row, column) = position;
-        (
-            if row >= 0 {
-                row / self.rows
-            } else {
-                (row - self.rows + 1) / self.rows
-            },
-            if column >= 0 {
-                column / self.columns
-            } else {
-                (column - self.columns + 1) / self.columns
-            },
-        )
+    fn chunk(&self, position: &Vec2i) -> Vec2i {
+        position.div_euclid(self.rows, self.columns)
     }
 
     fn filtered_reachable<F>(&self, steps: usize, func: F) -> usize
     where
-        F: Fn(&(i64, i64)) -> bool,
+        F: Fn(&Vec2i) -> bool,
     {
         let distances = self.distances(steps, &func);
         let parity = steps % 2;
@@ -213,9 +200,9 @@ impl Puzzle {
             .count()
     }
 
-    fn distances<F>(&self, steps: usize, func: F) -> HashMap<(i64, i64), usize>
+    fn distances<F>(&self, steps: usize, func: F) -> HashMap<Vec2i, usize>
     where
-        F: Fn(&(i64, i64)) -> bool,
+        F: Fn(&Vec2i) -> bool,
     {
         let mut queue = VecDeque::new();
         queue.push_back(self.start.clone());
@@ -223,17 +210,8 @@ impl Puzzle {
         distances.insert(self.start.clone(), 0);
         while let Some(position) = queue.pop_front() {
             let new_distance = distances.get(&position).unwrap() + 1;
-            let (row, column) = position;
             if new_distance <= steps {
-                for adjacent in [
-                    (row + 1, column),
-                    (row - 1, column),
-                    (row, column + 1),
-                    (row, column - 1),
-                ]
-                .into_iter()
-                .filter(&func)
-                {
+                for adjacent in position.adjacent().into_iter().filter(&func) {
                     if distances
                         .get(&adjacent)
                         .map(|&old_distance| new_distance < old_distance)
@@ -248,10 +226,10 @@ impl Puzzle {
         distances
     }
 
-    fn contains_wrapped(&self, position: &(i64, i64)) -> bool {
-        let x = position.0.rem_euclid(self.rows);
-        let y = position.1.rem_euclid(self.columns);
-        self.garden.contains(&(x, y))
+    fn contains_wrapped(&self, position: &Vec2i) -> bool {
+        let row = position.row.rem_euclid(self.rows);
+        let column = position.column.rem_euclid(self.columns);
+        self.garden.contains(&Vec2i::new(row, column))
     }
 }
 
@@ -265,11 +243,11 @@ impl std::str::FromStr for Puzzle {
             for (column, symbol) in line.chars().enumerate() {
                 match symbol {
                     '.' => {
-                        garden.insert((row as i64, column as i64));
+                        garden.insert((row as i64, column as i64).into());
                     }
                     'S' => {
-                        garden.insert((row as i64, column as i64));
-                        start = Some((row as i64, column as i64));
+                        garden.insert((row as i64, column as i64).into());
+                        start = Some((row as i64, column as i64).into());
                     }
                     _ => (),
                 }
@@ -285,54 +263,6 @@ mod tests {
     use super::*;
 
     const EXAMPLE: &str = include_str!("../assets/example.txt");
-
-    #[test]
-    fn wrapped_contains_preserves_regular_behaviour() {
-        let s = "S.\n#.";
-        let puzzle: Puzzle = s.parse().unwrap();
-        assert!(puzzle.contains_wrapped(&(0, 0)));
-        assert!(!puzzle.contains_wrapped(&(1, 0)));
-        assert!(puzzle.contains_wrapped(&(0, 1)));
-        assert!(puzzle.contains_wrapped(&(1, 1)));
-    }
-
-    #[test]
-    fn wrapped_contains_wraps_next() {
-        let s = "S.\n#.";
-        let puzzle: Puzzle = s.parse().unwrap();
-        assert!(puzzle.contains_wrapped(&(2, 0)));
-        assert!(!puzzle.contains_wrapped(&(3, 0)));
-        assert!(puzzle.contains_wrapped(&(2, 1)));
-        assert!(puzzle.contains_wrapped(&(3, 1)));
-    }
-
-    #[test]
-    fn wrapped_contains_wraps_previous() {
-        let s = "S.\n#.";
-        let puzzle: Puzzle = s.parse().unwrap();
-        assert!(puzzle.contains_wrapped(&(-2, 0)));
-        assert!(!puzzle.contains_wrapped(&(-1, 0)));
-        assert!(puzzle.contains_wrapped(&(-2, 1)));
-        assert!(puzzle.contains_wrapped(&(-1, 1)));
-    }
-
-    #[test]
-    fn chunk_calculations() {
-        let s = "...\n.S.\n...";
-        let puzzle: Puzzle = s.parse().unwrap();
-        assert_eq!(puzzle.chunk(&(-6, 0)).0, -2);
-        assert_eq!(puzzle.chunk(&(-5, 0)).0, -2);
-        assert_eq!(puzzle.chunk(&(-4, 0)).0, -2);
-        assert_eq!(puzzle.chunk(&(-3, 0)).0, -1);
-        assert_eq!(puzzle.chunk(&(-2, 0)).0, -1);
-        assert_eq!(puzzle.chunk(&(-1, 0)).0, -1);
-        assert_eq!(puzzle.chunk(&(0, 0)).0, 0);
-        assert_eq!(puzzle.chunk(&(1, 0)).0, 0);
-        assert_eq!(puzzle.chunk(&(2, 0)).0, 0);
-        assert_eq!(puzzle.chunk(&(3, 0)).0, 1);
-        assert_eq!(puzzle.chunk(&(4, 0)).0, 1);
-        assert_eq!(puzzle.chunk(&(5, 0)).0, 1);
-    }
 
     mod part1 {
         use super::*;

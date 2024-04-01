@@ -4,6 +4,7 @@ use puzzle::Puzzle;
 
 mod disance_iter;
 mod puzzle;
+mod vec;
 
 fn main() {
     aoc::aoc_main(aoc::input!(), part1, part2);

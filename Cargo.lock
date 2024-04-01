@@ -167,6 +167,9 @@ dependencies = [
 [[package]]
 name = "sand-slabs"
 version = "0.1.0"
+dependencies = [
+ "aoc",
+]
 
 [[package]]
 name = "scratchcards"

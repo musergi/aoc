@@ -1,9 +1,8 @@
+use crate::disance_iter::DistanceIter;
 use std::{
     collections::{HashMap, HashSet, VecDeque},
     i64, usize,
 };
-
-use crate::disance_iter::DistanceIter;
 
 pub struct Puzzle {
     start: (i64, i64),

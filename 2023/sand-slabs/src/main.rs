@@ -1,15 +1,27 @@
+use aoc::{aoc_main, input};
+use puzzle::Puzzle;
 use std::fmt::Display;
 
-use aoc::{aoc_main, input};
+mod line;
+mod puzzle;
+mod vec;
 
 fn main() {
     aoc_main(input!(), part1, part2);
 }
 
-fn part1(_input: &str) -> impl Display {
-    0
+fn part1(input: &str) -> impl Display {
+    common(input, Puzzle::part1)
 }
 
-fn part2(_input: &str) -> impl Display {
-    0
+fn part2(input: &str) -> impl Display {
+    common(input, Puzzle::part2)
+}
+
+fn common(input: &str, func: fn(Puzzle) -> usize) -> impl Display {
+    input
+        .parse::<Puzzle>()
+        .map(func)
+        .map(|v| v.to_string())
+        .unwrap_or_else(|err| err.to_string())
 }

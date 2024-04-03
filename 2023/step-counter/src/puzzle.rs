@@ -43,55 +43,36 @@ impl Puzzle {
             chunks.row.abs() + chunks.column.abs() <= unstable_area
                 && self.contains_wrapped(position)
         });
-        let mut chunked_distances: HashMap<Vec2i, HashMap<Vec2i, usize>> = HashMap::new();
-        let mut chunk_maxs: HashMap<Vec2i, usize> = HashMap::new();
-        for chunk_distance in 0..=unstable_area {
-            for chunk in DistanceIter::from(chunk_distance) {
-                let chunked: HashMap<_, _> = distances
-                    .iter()
-                    .filter(|(position, _)| self.chunk(&position) == chunk)
-                    .map(|(position, distance)| {
-                        (position.rem_euclid(self.rows, self.columns), *distance)
-                    })
-                    .collect();
-                chunk_maxs.insert(
-                    chunk,
-                    distances
-                        .iter()
-                        .filter(|(position, _)| self.chunk(&position) == chunk)
-                        .map(|(_, distance)| *distance)
-                        .max()
-                        .unwrap(),
-                );
-                chunked_distances.insert(chunk, chunked);
-            }
-        }
+        let chunks = self.chunks(&distances);
         let offset = (
             self.offset(
-                chunked_distances
+                &chunks
                     .get(&(unstable_area - 1, 0).into())
-                    .unwrap(),
-                chunked_distances.get(&(unstable_area, 0).into()).unwrap(),
+                    .unwrap()
+                    .distances,
+                &chunks.get(&(unstable_area, 0).into()).unwrap().distances,
             ),
             self.offset(
-                chunked_distances
+                &chunks
                     .get(&(0, unstable_area - 1).into())
-                    .unwrap(),
-                chunked_distances.get(&(0, unstable_area).into()).unwrap(),
+                    .unwrap()
+                    .distances,
+                &chunks.get(&(0, unstable_area).into()).unwrap().distances,
             ),
         );
         assert_eq!(offset.0, offset.1);
         let offset = offset.0;
-        let even_count = chunked_distances
+        let even_count = chunks
             .get(&(0, 0).into())
             .unwrap()
+            .distances
             .values()
             .filter(|value| *value % 2 == steps % 2)
             .count();
         let odd_count = self.garden.len() - even_count;
-        let max = chunk_maxs.values().max().unwrap();
+        let max = chunks.values().map(|chunk| chunk.max).max().unwrap();
         let (mut distance, mut count) = steps
-            .checked_sub(*max)
+            .checked_sub(max)
             .map(|remaining_steps| {
                 let distance_diff = remaining_steps / offset;
                 let distance = unstable_area + distance_diff as i64;
@@ -110,7 +91,7 @@ impl Puzzle {
             for mut chunk in DistanceIter::from(distance) {
                 let mut delta = 0;
 
-                if !chunked_distances.contains_key(&chunk) {
+                if !chunks.contains_key(&chunk) {
                     if chunk.row < -1 {
                         if chunk.column.abs() >= unstable_area {
                             chunk = (-1, (unstable_area - 1) * chunk.column.signum()).into();
@@ -131,8 +112,8 @@ impl Puzzle {
                     }
                 }
 
-                let distances = chunked_distances.get(&chunk).unwrap();
-                let chunk_max = chunk_maxs.get(&chunk).unwrap();
+                let distances = &chunks.get(&chunk).unwrap().distances;
+                let chunk_max = chunks.get(&chunk).unwrap().max;
                 if delta + chunk_max <= steps {
                     count += if chunk_parity == 0 {
                         even_count
@@ -169,6 +150,20 @@ impl Puzzle {
             .collect();
         assert_eq!(offsets.len(), 1);
         offsets.into_iter().next().unwrap()
+    }
+
+    fn chunks(&self, distances: &HashMap<Vec2i, usize>) -> HashMap<Vec2i, Chunk> {
+        distances
+            .iter()
+            .fold(HashMap::new(), |mut chunks, (vec, distance)| {
+                let chunk = self.chunk(vec);
+                let chunk_position = vec.rem_euclid(self.rows, self.columns);
+                chunks
+                    .entry(chunk)
+                    .or_default()
+                    .update(chunk_position, *distance);
+                chunks
+            })
     }
 
     fn chunk(&self, position: &Vec2i) -> Vec2i {
@@ -245,6 +240,21 @@ impl std::str::FromStr for Puzzle {
         let rows = s.lines().count() as i64;
         let columns = s.lines().map(|line| line.len()).max().ok_or("no rows")? as i64;
         Ok(Puzzle::new(start, rows, columns, garden))
+    }
+}
+
+#[derive(Debug, Default)]
+struct Chunk {
+    distances: HashMap<Vec2i, usize>,
+    max: usize,
+}
+
+impl Chunk {
+    fn update(&mut self, vec: Vec2i, distance: usize) {
+        if distance > self.max {
+            self.max = distance
+        }
+        self.distances.insert(vec, distance);
     }
 }
 

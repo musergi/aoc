@@ -15,25 +15,13 @@ const PART1_STEPS: usize = 64;
 const PART2_STEPS: usize = 26501365;
 
 impl Puzzle {
-    fn new(start: Vec2i, garden: HashSet<Vec2i>) -> Result<Puzzle, &'static str> {
-        let rows = garden
-            .iter()
-            .map(|position| position.row)
-            .max()
-            .ok_or("empty garden")?
-            + 1;
-        let columns = garden
-            .iter()
-            .map(|position| position.column)
-            .max()
-            .ok_or("empty garden")?
-            + 1;
-        Ok(Puzzle {
+    fn new(start: Vec2i, rows: i64, columns: i64, garden: HashSet<Vec2i>) -> Puzzle {
+        Puzzle {
             start,
             garden,
             rows,
             columns,
-        })
+        }
     }
 
     pub fn part1(self) -> usize {
@@ -254,7 +242,9 @@ impl std::str::FromStr for Puzzle {
             }
         }
         let start = start.ok_or("start not found")?;
-        Puzzle::new(start, garden)
+        let rows = s.lines().count() as i64;
+        let columns = s.lines().map(|line| line.len()).max().ok_or("no rows")? as i64;
+        Ok(Puzzle::new(start, rows, columns, garden))
     }
 }
 

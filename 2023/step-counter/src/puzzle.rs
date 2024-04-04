@@ -85,47 +85,82 @@ impl Puzzle {
                 (distance, count)
             })
             .unwrap_or((0, 0));
+        let unstable_max = DistanceIter::from(unstable_area)
+            .into_iter()
+            .map(|chunk| chunks.get(&chunk).unwrap().max)
+            .max()
+            .unwrap();
         loop {
             let initial_count = count;
             let chunk_parity = distance % 2;
-            for mut chunk in DistanceIter::from(distance) {
-                let mut delta = 0;
 
-                if !chunks.contains_key(&chunk) {
-                    if chunk.row < -1 {
-                        if chunk.column.abs() >= unstable_area {
-                            chunk = (-1, (unstable_area - 1) * chunk.column.signum()).into();
+            if distance <= unstable_area {
+                for chunk in DistanceIter::from(distance) {
+                    let distances = &chunks.get(&chunk).unwrap().distances;
+                    let chunk_max = chunks.get(&chunk).unwrap().max;
+                    if chunk_max <= steps {
+                        count += if chunk_parity == 0 {
+                            even_count
                         } else {
-                            chunk.row += distance - unstable_area;
-                        }
-                        delta += offset * (distance - unstable_area) as usize;
-                    } else if chunk.row > 1 {
-                        if chunk.column.abs() >= unstable_area {
-                            chunk = (1, (unstable_area - 1) * chunk.column.signum()).into();
-                        } else {
-                            chunk.row -= distance - unstable_area;
-                        }
-                        delta += offset * (distance - unstable_area) as usize;
+                            odd_count
+                        };
                     } else {
-                        chunk.column -= chunk.column.signum() * (distance - unstable_area);
-                        delta += offset * (distance - unstable_area) as usize;
+                        count += distances
+                            .values()
+                            .filter(|&distance| *distance <= steps)
+                            .filter(|&distance| (distance) % 2 == steps % 2)
+                            .count();
                     }
                 }
-
-                let distances = &chunks.get(&chunk).unwrap().distances;
-                let chunk_max = chunks.get(&chunk).unwrap().max;
-                if delta + chunk_max <= steps {
+            } else {
+                let delta = (distance - unstable_area) as usize * offset;
+                if delta + unstable_max <= steps {
                     count += if chunk_parity == 0 {
-                        even_count
+                        even_count * 4 * distance as usize
                     } else {
-                        odd_count
+                        odd_count * 4 * distance as usize
                     };
                 } else {
-                    count += distances
-                        .values()
-                        .filter(|&distance| distance + delta <= steps)
-                        .filter(|&distance| (distance + delta) % 2 == steps % 2)
-                        .count();
+                    // Square corners
+                    count += [
+                        Vec2i::new(0, unstable_area),
+                        Vec2i::new(unstable_area, 0),
+                        Vec2i::new(0, -unstable_area),
+                        Vec2i::new(-unstable_area, 0),
+                    ]
+                    .map(|chunk| chunks.get(&chunk).unwrap())
+                    .map(|chunk| {
+                        chunk
+                            .distances
+                            .values()
+                            .map(|distance| distance + delta)
+                            .filter(|&distance| distance <= steps)
+                            .filter(|&distance| distance % 2 == steps % 2)
+                            .count()
+                    })
+                    .into_iter()
+                    .sum::<usize>();
+                    // edges
+                    count += [
+                        Vec2i::new(1, unstable_area - 1),
+                        Vec2i::new(-1, unstable_area - 1),
+                        Vec2i::new(1, -(unstable_area - 1)),
+                        Vec2i::new(-1, -(unstable_area - 1)),
+                    ]
+                    .into_iter()
+                    .map(|chunk| {
+                        chunks
+                            .get(&chunk)
+                            .unwrap()
+                            .distances
+                            .values()
+                            .map(|distance| distance + delta)
+                            .filter(|&distance| distance <= steps)
+                            .filter(|&distance| distance % 2 == steps % 2)
+                            .count()
+                    })
+                    .sum::<usize>()
+                        * (distance - 1) as usize;
                 }
             }
             if initial_count == count {
@@ -243,7 +278,7 @@ impl std::str::FromStr for Puzzle {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq)]
 struct Chunk {
     distances: HashMap<Vec2i, usize>,
     max: usize,

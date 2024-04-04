@@ -44,6 +44,12 @@ impl Puzzle {
                 && self.contains_wrapped(position)
         });
         let chunks = self.chunks(&distances);
+        let edge = (1..unstable_area)
+            .map(|idx| chunks.get(&Vec2i::new(idx, unstable_area - idx)).unwrap())
+            .collect::<Vec<_>>();
+        for (f, s) in edge[..(edge.len() - 1)].iter().zip(edge[1..].iter()) {
+            assert_eq!(f, s)
+        }
         let offset = (
             self.offset(
                 &chunks
@@ -69,7 +75,7 @@ impl Puzzle {
             .values()
             .filter(|value| *value % 2 == steps % 2)
             .count();
-        let odd_count = self.garden.len() - even_count;
+        let odd_count = chunks.get(&(0, 0).into()).unwrap().distances.len() - even_count;
         let max = chunks.values().map(|chunk| chunk.max).max().unwrap();
         let (mut distance, mut count) = steps
             .checked_sub(max)

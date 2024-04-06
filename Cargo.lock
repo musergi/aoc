@@ -114,6 +114,9 @@ dependencies = [
 [[package]]
 name = "never-tell-me-the-odds"
 version = "0.1.0"
+dependencies = [
+ "aoc",
+]
 
 [[package]]
 name = "not-quite-lisp"

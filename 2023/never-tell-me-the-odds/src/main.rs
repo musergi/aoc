@@ -4,6 +4,7 @@ use std::fmt::Display;
 
 mod area;
 mod hailstone;
+mod matrix;
 mod puzzle;
 mod vec;
 
@@ -12,13 +13,17 @@ fn main() {
 }
 
 fn part1(input: &str) -> impl Display {
-    input
-        .parse::<Puzzle>()
-        .map(|puzzle| puzzle.part1())
-        .map(|value| value.to_string())
-        .unwrap_or_else(|err| err.to_string())
+    common(input, Puzzle::part1)
 }
 
-fn part2(_input: &str) -> impl Display {
-    0
+fn part2(input: &str) -> impl Display {
+    common(input, Puzzle::part2)
+}
+
+fn common(input: &str, func: fn(Puzzle) -> usize) -> impl Display {
+    input
+        .parse::<Puzzle>()
+        .map(func)
+        .map(|value| value.to_string())
+        .unwrap_or_else(|err| err.to_string())
 }

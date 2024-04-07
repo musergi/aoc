@@ -1,16 +1,106 @@
-use std::str::FromStr;
+use std::{
+    ops::{Add, Div, Mul, Sub},
+    str::FromStr,
+};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Vec3i {
-    pub x: i64,
-    pub y: i64,
-    pub z: i64,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Vec3<T> {
+    pub x: T,
+    pub y: T,
+    pub z: T,
 }
+
+impl<T> Vec3<T>
+where
+    T: Add<Output = T> + Sub<Output = T> + Mul<Output = T> + Copy,
+{
+    pub fn cross(self, rhs: Vec3<T>) -> Vec3<T> {
+        Vec3 {
+            x: self.y * rhs.z - self.z * rhs.y,
+            y: self.z * rhs.x - self.x * rhs.z,
+            z: self.x * rhs.y - self.y * rhs.x,
+        }
+    }
+
+    pub fn dot(self, rhs: Vec3<T>) -> T {
+        self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
+    }
+}
+
+impl<T> Add for Vec3<T>
+where
+    T: Add<Output = T>,
+{
+    type Output = Vec3<T>;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Vec3 {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+}
+
+impl<T> Sub for Vec3<T>
+where
+    T: Sub<Output = T>,
+{
+    type Output = Vec3<T>;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Vec3 {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
+        }
+    }
+}
+
+impl<T> Mul<T> for Vec3<T>
+where
+    T: Mul<Output = T> + Copy,
+{
+    type Output = Vec3<T>;
+
+    fn mul(self, rhs: T) -> Self::Output {
+        Vec3 {
+            x: self.x * rhs,
+            y: self.y * rhs,
+            z: self.z * rhs,
+        }
+    }
+}
+
+impl<T> Div<T> for Vec3<T>
+where
+    T: Div<Output = T> + Copy,
+{
+    type Output = Vec3<T>;
+
+    fn div(self, rhs: T) -> Self::Output {
+        Vec3 {
+            x: self.x / rhs,
+            y: self.y / rhs,
+            z: self.z / rhs,
+        }
+    }
+}
+
+pub type Vec3i = Vec3<i64>;
 
 impl Vec3i {
     pub fn xy(&self) -> Vec2i {
-        let Vec3i { x, y, .. } = self;
+        let Vec3 { x, y, .. } = self;
         Vec2i { x: *x, y: *y }
+    }
+
+    pub fn widen(self) -> Vec3<i128> {
+        Vec3 {
+            x: self.x.into(),
+            y: self.y.into(),
+            z: self.z.into(),
+        }
     }
 }
 

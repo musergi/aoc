@@ -7,8 +7,8 @@ use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Hailstone {
-    position: Vec3i,
-    velocity: Vec3i,
+    pub position: Vec3i,
+    pub velocity: Vec3i,
 }
 
 impl Hailstone {

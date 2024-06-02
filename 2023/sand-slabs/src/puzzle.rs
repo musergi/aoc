@@ -31,16 +31,19 @@ impl Puzzle {
             .map(|idx| {
                 let mut removed: Vec<_> = repeat(false).take(supports.len()).collect();
                 *removed.get_mut(idx).unwrap() = true;
-                let mut open = vec![idx];
-                while let Some(idx) = open.pop() {
+                let mut recently_removed = vec![idx];
+                while let Some(idx) = recently_removed.pop() {
                     for supported in supports.get(idx).unwrap() {
+                        // If all other supports are removed
                         if supports
                             .iter()
-                            .filter(|ss| ss.contains(&idx))
-                            .all(|ss| ss.iter().all(|s| *removed.get(*s).unwrap()))
+                            .enumerate()
+                            .filter(|(_, supporting)| supporting.contains(&supported))
+                            .all(|(other_support, _)| *removed.get(other_support).unwrap())
                         {
+                            // If not already removed
                             if !*removed.get(*supported).unwrap() {
-                                open.push(*supported);
+                                recently_removed.push(*supported);
                                 *removed.get_mut(*supported).unwrap() = true;
                             }
                         }

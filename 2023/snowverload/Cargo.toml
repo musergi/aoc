@@ -1,0 +1,8 @@
+[package]
+name = "snowverload"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aoc = { path = "../../aoc" }
+rand = "0.8.5"

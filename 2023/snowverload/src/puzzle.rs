@@ -1,5 +1,3 @@
-use rand::rngs::ThreadRng;
-use rand::{thread_rng, Rng};
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::str::FromStr;
@@ -26,17 +24,16 @@ impl Puzzle {
 }
 
 fn find_partition(edges: &[Edge], nodes: usize) -> usize {
-    let mut rng = thread_rng();
+    let mut rng = Random::default();
     std::iter::repeat_with(|| edges.to_vec())
         .find_map(|edges| try_partition(&mut rng, edges, nodes))
         .unwrap()
 }
 
-fn try_partition(rng: &mut ThreadRng, mut edges: Vec<Edge>, nodes: usize) -> Option<usize> {
+fn try_partition(rng: &mut Random, mut edges: Vec<Edge>, nodes: usize) -> Option<usize> {
     let mut nodes: Vec<_> = std::iter::repeat(1).take(nodes).collect();
     while nodes.iter().filter(|&weight| *weight != 0).count() > 2 {
-        let removed_idx = rng.gen_range(0..edges.len());
-        let removed_edge = *edges.get(removed_idx).unwrap();
+        let removed_edge = rng.sample(&edges);
         let (left, right) = removed_edge.unpack();
         *nodes.get_mut(left).unwrap() += *nodes.get(right).unwrap();
         *nodes.get_mut(right).unwrap() = 0;
@@ -112,6 +109,50 @@ impl Edge {
 
     fn unpack(self) -> (usize, usize) {
         (self.0, self.1)
+    }
+}
+
+struct Random {
+    state: u32,
+}
+
+impl Default for Random {
+    fn default() -> Self {
+        Random { state: 123456789 }
+    }
+}
+
+impl Random {
+    fn next(&mut self) -> u32 {
+        self.state = self.state.wrapping_mul(1103515245).wrapping_add(12345);
+        self.state
+    }
+
+    fn sample<T>(&mut self, l: &[T]) -> T
+    where
+        T: Copy,
+    {
+        let length = u32::try_from(l.len()).unwrap();
+        let idx = usize::try_from(self.next_in_range(length)).unwrap();
+        *l.get(idx).unwrap()
+    }
+
+    fn next_in_range(&mut self, range: u32) -> u32 {
+        let mut modulo = None;
+        loop {
+            let new = modulo.map(|v| v >> 1).unwrap_or(1 << 30);
+            if new < range {
+                break;
+            }
+            modulo = Some(new);
+        }
+        loop {
+            let value = self.next();
+            let value = modulo.map(|modulo| value % modulo).unwrap_or(value);
+            if value < range {
+                return value;
+            }
+        }
     }
 }
 
